@@ -1,0 +1,299 @@
+{
+  "seed": 42,
+  "original_model": {
+    "hidden_dims": [
+      128,
+      64,
+      32
+    ],
+    "best_val_loss": 0.00175225,
+    "epochs_trained": 150
+  },
+  "candidates": [
+    {
+      "arch": "A",
+      "hidden_dims": [
+        256,
+        128,
+        64,
+        32
+      ],
+      "n_params": 48874,
+      "best_val_loss": 0.0013221,
+      "epochs_trained": 122,
+      "ckpt_path": "D:\\PythonProjects\\levelsmith\\training\\models\\best_model_A.pt"
+    },
+    {
+      "arch": "B",
+      "hidden_dims": [
+        128,
+        128,
+        64,
+        32
+      ],
+      "n_params": 30058,
+      "best_val_loss": 0.0013647,
+      "epochs_trained": 130,
+      "ckpt_path": "D:\\PythonProjects\\levelsmith\\training\\models\\best_model_B.pt"
+    },
+    {
+      "arch": "C",
+      "hidden_dims": [
+        256,
+        128,
+        128,
+        64,
+        32
+      ],
+      "n_params": 65642,
+      "best_val_loss": 0.00136547,
+      "epochs_trained": 150,
+      "ckpt_path": "D:\\PythonProjects\\levelsmith\\training\\models\\best_model_C.pt"
+    }
+  ],
+  "best_arch": "A",
+  "best_val_loss": 0.0013221,
+  "improvement_pct": 24.55,
+  "style_params": {
+    "medieval": {
+      "height_range_min": 3.5207,
+      "height_range_max": 8.1485,
+      "wall_thickness": 0.7679,
+      "floor_thickness": 0.3286,
+      "door_width": 1.2033,
+      "door_height": 2.7622,
+      "win_width": 0.5644,
+      "win_height": 1.2304,
+      "win_density": 0.2199,
+      "subdivision": 4
+    },
+    "modern": {
+      "height_range_min": 2.8213,
+      "height_range_max": 4.5358,
+      "wall_thickness": 0.1962,
+      "floor_thickness": 0.2184,
+      "door_width": 1.0093,
+      "door_height": 2.2112,
+      "win_width": 1.7602,
+      "win_height": 1.9856,
+      "win_density": 0.6728,
+      "subdivision": 2
+    },
+    "industrial": {
+      "height_range_min": 3.9806,
+      "height_range_max": 11.6334,
+      "wall_thickness": 0.4212,
+      "floor_thickness": 0.2588,
+      "door_width": 1.9139,
+      "door_height": 3.8656,
+      "win_width": 0.9804,
+      "win_height": 0.8138,
+      "win_density": 0.3382,
+      "subdivision": 3
+    },
+    "fantasy": {
+      "height_range_min": 3.9858,
+      "height_range_max": 10.0447,
+      "wall_thickness": 0.623,
+      "floor_thickness": 0.298,
+      "door_width": 1.5554,
+      "door_height": 3.4112,
+      "win_width": 1.0507,
+      "win_height": 1.9388,
+      "win_density": 0.4216,
+      "subdivision": 3
+    },
+    "horror": {
+      "height_range_min": 2.5915,
+      "height_range_max": 4.7324,
+      "wall_thickness": 0.6424,
+      "floor_thickness": 0.2998,
+      "door_width": 0.8581,
+      "door_height": 2.2503,
+      "win_width": 0.3617,
+      "win_height": 0.5992,
+      "win_density": 0.1305,
+      "subdivision": 5
+    },
+    "japanese": {
+      "height_range_min": 2.2746,
+      "height_range_max": 3.3558,
+      "wall_thickness": 0.1395,
+      "floor_thickness": 0.2441,
+      "door_width": 0.8021,
+      "door_height": 1.9709,
+      "win_width": 0.7671,
+      "win_height": 1.1879,
+      "win_density": 0.6286,
+      "subdivision": 3
+    },
+    "desert": {
+      "height_range_min": 2.7196,
+      "height_range_max": 4.3177,
+      "wall_thickness": 0.689,
+      "floor_thickness": 0.1832,
+      "door_width": 0.8508,
+      "door_height": 2.0935,
+      "win_width": 0.3733,
+      "win_height": 0.5439,
+      "win_density": 0.1335,
+      "subdivision": 2
+    },
+    "medieval_chapel": {
+      "height_range_min": 3.0449,
+      "height_range_max": 6.0,
+      "wall_thickness": 0.5818,
+      "floor_thickness": 0.301,
+      "door_width": 1.0216,
+      "door_height": 2.5408,
+      "win_width": 0.4541,
+      "win_height": 1.7355,
+      "win_density": 0.2672,
+      "subdivision": 3
+    },
+    "medieval_keep": {
+      "height_range_min": 5.0188,
+      "height_range_max": 14.9352,
+      "wall_thickness": 1.1809,
+      "floor_thickness": 0.4482,
+      "door_width": 0.8312,
+      "door_height": 2.1344,
+      "win_width": 0.3141,
+      "win_height": 0.503,
+      "win_density": 0.0402,
+      "subdivision": 6
+    },
+    "modern_loft": {
+      "height_range_min": 3.4744,
+      "height_range_max": 5.9791,
+      "wall_thickness": 0.2516,
+      "floor_thickness": 0.2203,
+      "door_width": 1.205,
+      "door_height": 2.5018,
+      "win_width": 1.9301,
+      "win_height": 2.1896,
+      "win_density": 0.645,
+      "subdivision": 1
+    },
+    "modern_villa": {
+      "height_range_min": 3.0241,
+      "height_range_max": 4.9621,
+      "wall_thickness": 0.1286,
+      "floor_thickness": 0.2443,
+      "door_width": 1.2021,
+      "door_height": 2.3583,
+      "win_width": 2.4769,
+      "win_height": 2.8222,
+      "win_density": 0.8446,
+      "subdivision": 2
+    },
+    "industrial_workshop": {
+      "height_range_min": 3.4614,
+      "height_range_max": 7.3437,
+      "wall_thickness": 0.4605,
+      "floor_thickness": 0.2094,
+      "door_width": 1.7175,
+      "door_height": 3.0686,
+      "win_width": 0.7877,
+      "win_height": 0.9925,
+      "win_density": 0.308,
+      "subdivision": 4
+    },
+    "industrial_powerplant": {
+      "height_range_min": 5.9065,
+      "height_range_max": 19.5032,
+      "wall_thickness": 0.5977,
+      "floor_thickness": 0.3463,
+      "door_width": 2.5687,
+      "door_height": 4.8854,
+      "win_width": 0.6753,
+      "win_height": 0.4746,
+      "win_density": 0.137,
+      "subdivision": 2
+    },
+    "fantasy_dungeon": {
+      "height_range_min": 2.1566,
+      "height_range_max": 3.3541,
+      "wall_thickness": 0.8967,
+      "floor_thickness": 0.3403,
+      "door_width": 0.6744,
+      "door_height": 1.9094,
+      "win_width": 0.3088,
+      "win_height": 0.4104,
+      "win_density": 0.0267,
+      "subdivision": 8
+    },
+    "fantasy_palace": {
+      "height_range_min": 5.884,
+      "height_range_max": 18.5978,
+      "wall_thickness": 0.7013,
+      "floor_thickness": 0.3497,
+      "door_width": 2.503,
+      "door_height": 4.571,
+      "win_width": 1.4787,
+      "win_height": 2.8926,
+      "win_density": 0.5997,
+      "subdivision": 2
+    },
+    "horror_asylum": {
+      "height_range_min": 2.7218,
+      "height_range_max": 4.6754,
+      "wall_thickness": 0.3907,
+      "floor_thickness": 0.2815,
+      "door_width": 0.9032,
+      "door_height": 2.1355,
+      "win_width": 0.5944,
+      "win_height": 0.7709,
+      "win_density": 0.2901,
+      "subdivision": 7
+    },
+    "horror_crypt": {
+      "height_range_min": 2.0799,
+      "height_range_max": 3.1401,
+      "wall_thickness": 0.8072,
+      "floor_thickness": 0.2976,
+      "door_width": 0.6498,
+      "door_height": 1.8643,
+      "win_width": 0.3036,
+      "win_height": 0.4132,
+      "win_density": 0.0223,
+      "subdivision": 7
+    },
+    "japanese_temple": {
+      "height_range_min": 3.4733,
+      "height_range_max": 6.3516,
+      "wall_thickness": 0.2652,
+      "floor_thickness": 0.3366,
+      "door_width": 1.1915,
+      "door_height": 2.776,
+      "win_width": 0.5674,
+      "win_height": 1.2082,
+      "win_density": 0.3132,
+      "subdivision": 3
+    },
+    "japanese_machiya": {
+      "height_range_min": 2.4854,
+      "height_range_max": 3.8896,
+      "wall_thickness": 0.1752,
+      "floor_thickness": 0.2045,
+      "door_width": 0.8311,
+      "door_height": 2.0158,
+      "win_width": 0.5577,
+      "win_height": 0.8768,
+      "win_density": 0.4044,
+      "subdivision": 5
+    },
+    "desert_palace": {
+      "height_range_min": 3.9916,
+      "height_range_max": 9.678,
+      "wall_thickness": 0.7458,
+      "floor_thickness": 0.2305,
+      "door_width": 1.5129,
+      "door_height": 3.4097,
+      "win_width": 0.6251,
+      "win_height": 1.759,
+      "win_density": 0.3024,
+      "subdivision": 3
+    }
+  }
+}

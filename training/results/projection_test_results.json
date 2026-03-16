@@ -1,0 +1,74 @@
+[
+  {
+    "query": "阴暗压抑的地下牢房",
+    "dominant_style": "fantasy_dungeon",
+    "top3": [
+      {
+        "style": "fantasy_dungeon",
+        "similarity": 0.7882
+      },
+      {
+        "style": "horror_crypt",
+        "similarity": 0.7358
+      },
+      {
+        "style": "horror_asylum",
+        "similarity": 0.6976
+      }
+    ]
+  },
+  {
+    "query": "宏伟华丽的魔法宫殿",
+    "dominant_style": "fantasy_palace",
+    "top3": [
+      {
+        "style": "fantasy_palace",
+        "similarity": 0.8955
+      },
+      {
+        "style": "fantasy",
+        "similarity": 0.7878
+      },
+      {
+        "style": "desert_palace",
+        "similarity": 0.7036
+      }
+    ]
+  },
+  {
+    "query": "窄面深进的京町家",
+    "dominant_style": "japanese_machiya",
+    "top3": [
+      {
+        "style": "japanese_machiya",
+        "similarity": 0.7872
+      },
+      {
+        "style": "fantasy_dungeon",
+        "similarity": 0.6286
+      },
+      {
+        "style": "japanese_temple",
+        "similarity": 0.6004
+      }
+    ]
+  },
+  {
+    "query": "废弃精神病院的铁窗走廊",
+    "dominant_style": "horror_asylum",
+    "top3": [
+      {
+        "style": "horror_asylum",
+        "similarity": 0.8504
+      },
+      {
+        "style": "fantasy_dungeon",
+        "similarity": 0.6821
+      },
+      {
+        "style": "horror_crypt",
+        "similarity": 0.5827
+      }
+    ]
+  }
+]
