@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LevelSmith</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #eee; }
+
+  /* Header */
+  .header { background: #16213e; padding: 16px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #0f3460; }
+  .header h1 { font-size: 20px; color: #e94560; white-space: nowrap; }
+
+  /* Controls */
+  .controls { padding: 16px 24px; background: #16213e; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+  .field input, .field select { background: #0f3460; border: 1px solid #333; color: #eee; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
+  .field input:focus, .field select:focus { outline: none; border-color: #e94560; }
+  .prompt-field { flex: 1; min-width: 300px; }
+  .prompt-field input { width: 100%; }
+
+  .btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: 600; transition: all 0.15s; }
+  .btn-primary { background: #e94560; color: #fff; }
+  .btn-primary:hover { background: #c73652; }
+  .btn-primary:disabled { background: #555; cursor: not-allowed; }
+  .btn-secondary { background: #0f3460; color: #eee; border: 1px solid #333; }
+  .btn-secondary:hover { background: #1a4a8a; }
+
+  /* Main layout */
+  .main { display: flex; height: calc(100vh - 130px); }
+
+  /* 3D Viewer */
+  .viewer { flex: 1; position: relative; background: #111; }
+  .viewer canvas { width: 100% !important; height: 100% !important; display: block; }
+  .viewer-overlay { position: absolute; bottom: 12px; left: 12px; display: flex; gap: 8px; }
+
+  /* Sidebar */
+  .sidebar { width: 280px; background: #16213e; padding: 16px; overflow-y: auto; border-left: 1px solid #0f3460; }
+  .sidebar h3 { font-size: 13px; color: #888; text-transform: uppercase; margin-bottom: 8px; }
+  .stat { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; border-bottom: 1px solid #1a1a2e; }
+  .stat-val { color: #e94560; font-weight: 600; }
+  .parsed-info { margin-top: 16px; font-size: 12px; background: #0f3460; padding: 10px; border-radius: 6px; }
+  .parsed-info code { color: #4fc3f7; }
+
+  /* Loading */
+  .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+  .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: #e94560; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Empty state */
+  .empty-state { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #555; }
+  .empty-state p { font-size: 14px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>LevelSmith</h1>
+  <span style="color:#666; font-size:13px;">AI-Powered Level Generator</span>
+</div>
+
+<div class="controls">
+  <div class="field prompt-field">
+    <label>Prompt</label>
+    <input id="prompt" type="text" placeholder="medieval village, 15 buildings, compact layout" value="medieval village, 10 buildings, street layout">
+  </div>
+  <div class="field">
+    <label>Style</label>
+    <select id="style"><option value="">Auto (from prompt)</option></select>
+  </div>
+  <div class="field">
+    <label>Layout</label>
+    <select id="layout">
+      <option value="">Auto</option>
+      <option value="street">Street</option>
+      <option value="grid">Grid</option>
+      <option value="plaza">Plaza</option>
+      <option value="organic">Organic</option>
+      <option value="random">Random</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Count</label>
+    <input id="count" type="number" min="3" max="30" value="" placeholder="Auto" style="width:70px;">
+  </div>
+  <button id="genBtn" class="btn btn-primary">Generate</button>
+</div>
+
+<div class="main">
+  <div class="viewer" id="viewer">
+    <div class="empty-state" id="emptyState">
+      <div style="font-size:48px;opacity:0.3;">&#127984;</div>
+      <p>Enter a prompt and click Generate</p>
+    </div>
+    <div class="loading" id="loading" style="display:none;">
+      <div class="spinner"></div>
+      <div>Generating level...</div>
+    </div>
+    <div class="viewer-overlay" id="dlButtons" style="display:none;">
+      <a id="dlGlb" class="btn btn-secondary" download>GLB</a>
+      <a id="dlFbx" class="btn btn-secondary" download>FBX</a>
+    </div>
+  </div>
+
+  <div class="sidebar" id="sidebar">
+    <h3>Statistics</h3>
+    <div id="stats">
+      <div class="stat"><span>Faces</span><span class="stat-val" id="s-faces">-</span></div>
+      <div class="stat"><span>Vertices</span><span class="stat-val" id="s-verts">-</span></div>
+      <div class="stat"><span>Meshes</span><span class="stat-val" id="s-meshes">-</span></div>
+      <div class="stat"><span>GLB size</span><span class="stat-val" id="s-glb">-</span></div>
+      <div class="stat"><span>FBX size</span><span class="stat-val" id="s-fbx">-</span></div>
+      <div class="stat"><span>Time</span><span class="stat-val" id="s-time">-</span></div>
+    </div>
+    <div class="parsed-info" id="parsedInfo" style="display:none;">
+      <h3 style="margin-bottom:6px;">Parsed Parameters</h3>
+      <div id="parsedContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Three.js via importmap (avoids duplicate script tags) -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// ── Three.js setup ──
+let scene, camera, renderer, controls, currentModel;
+const viewerEl = document.getElementById('viewer');
+
+function initThree() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1a2e);
+
+  camera = new THREE.PerspectiveCamera(50, viewerEl.clientWidth / viewerEl.clientHeight, 0.1, 10000);
+  camera.position.set(60, 40, 60);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(viewerEl.clientWidth, viewerEl.clientHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  viewerEl.insertBefore(renderer.domElement, viewerEl.firstChild);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.target.set(50, 3, 50);
+
+  // Lights
+  const amb = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(amb);
+  const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+  dir.position.set(80, 120, 60);
+  dir.castShadow = false;
+  scene.add(dir);
+  const fill = new THREE.DirectionalLight(0x8888ff, 0.3);
+  fill.position.set(-40, 60, -30);
+  scene.add(fill);
+
+  // Grid
+  const grid = new THREE.GridHelper(200, 20, 0x333355, 0x222244);
+  scene.add(grid);
+
+  animate();
+  window.addEventListener('resize', onResize);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+function onResize() {
+  camera.aspect = viewerEl.clientWidth / viewerEl.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(viewerEl.clientWidth, viewerEl.clientHeight);
+}
+
+function loadGLB(url) {
+  const loader = new GLTFLoader();
+  loader.load(url, (gltf) => {
+    if (currentModel) scene.remove(currentModel);
+    currentModel = gltf.scene;
+
+    // Enable vertex colors
+    currentModel.traverse((child) => {
+      if (child.isMesh) {
+        child.material = new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.7,
+          metalness: 0.0,
+        });
+      }
+    });
+
+    scene.add(currentModel);
+
+    // Fit camera
+    const box = new THREE.Box3().setFromObject(currentModel);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    camera.position.set(center.x + maxDim * 0.8, center.y + maxDim * 0.5, center.z + maxDim * 0.8);
+    controls.target.copy(center);
+    controls.update();
+  });
+}
+
+// ── Load styles ──
+async function loadStyles() {
+  try {
+    const resp = await fetch('/styles');
+    const data = await resp.json();
+    const sel = document.getElementById('style');
+    data.styles.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s.replace(/_/g, ' ');
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    console.error('Failed to load styles:', e);
+  }
+}
+
+// ── Generate ──
+async function doGenerate() {
+  const btn = document.getElementById('genBtn');
+  const loading = document.getElementById('loading');
+  const empty = document.getElementById('emptyState');
+  const dlBtns = document.getElementById('dlButtons');
+
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  loading.style.display = 'block';
+  empty.style.display = 'none';
+  dlBtns.style.display = 'none';
+
+  const body = { prompt: document.getElementById('prompt').value };
+  const style = document.getElementById('style').value;
+  const layout = document.getElementById('layout').value;
+  const count = document.getElementById('count').value;
+  if (style) body.style = style;
+  if (layout) body.layout = layout;
+  if (count) body.count = parseInt(count);
+
+  try {
+    const resp = await fetch('/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || 'Generation failed');
+    }
+    const data = await resp.json();
+
+    // Update stats
+    document.getElementById('s-faces').textContent = data.stats.faces.toLocaleString();
+    document.getElementById('s-verts').textContent = data.stats.vertices.toLocaleString();
+    document.getElementById('s-meshes').textContent = data.stats.meshes;
+    document.getElementById('s-glb').textContent = data.stats.glb_kb + ' KB';
+    document.getElementById('s-fbx').textContent = data.stats.fbx_kb + ' KB';
+    document.getElementById('s-time').textContent = data.stats.time_s + 's';
+
+    // Update parsed info
+    const pi = document.getElementById('parsedInfo');
+    pi.style.display = 'block';
+    document.getElementById('parsedContent').innerHTML =
+      Object.entries(data.parsed).map(([k,v]) =>
+        `<div><code>${k}</code>: <strong>${v}</strong></div>`
+      ).join('');
+
+    // Download buttons
+    const dlGlb = document.getElementById('dlGlb');
+    const dlFbx = document.getElementById('dlFbx');
+    dlGlb.href = data.glb_url;
+    dlFbx.href = data.fbx_url;
+    dlBtns.style.display = 'flex';
+
+    // Load 3D preview
+    loadGLB(data.glb_url);
+
+  } catch (e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate';
+    loading.style.display = 'none';
+  }
+};
+
+// ── Init ──
+initThree();
+loadStyles();
+
+// Bind generate button + Enter key
+document.getElementById('genBtn').addEventListener('click', doGenerate);
+document.getElementById('prompt').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') doGenerate();
+});
+</script>
+</body>
+</html>

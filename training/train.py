@@ -28,7 +28,7 @@ from generate_data import generate_dataset
 from model import StyleParamMLP, StyleParamLoss, build_model, count_parameters
 from style_registry import (
     STYLE_REGISTRY, OUTPUT_KEYS, OUTPUT_PARAMS, FEATURE_DIM, OUTPUT_DIM,
-    get_feature_vector, denormalize_params,
+    get_feature_vector, get_param_vector, denormalize_params,
 )
 
 # ─── 默认超参数 ────────────────────────────────────────────────
@@ -194,13 +194,25 @@ def export_trained_params(
             "feature_vector": fv.tolist(),
             "normalized":    pred_norm.tolist(),
             "params": {
+                # ── 原有10参数 ──
                 "height_range":    [params["height_range_min"], params["height_range_max"]],
                 "wall_thickness":  params["wall_thickness"],
                 "floor_thickness": params["floor_thickness"],
                 "door_spec":       {"width": params["door_width"], "height": params["door_height"]},
                 "win_spec":        {"width": params["win_width"],  "height": params["win_height"],
                                     "density": params["win_density"]},
-                "subdivision":     int(params["subdivision"]),
+                "subdivision":     params["subdivision"],
+                # ── 新增10参数 ──
+                "roof_type":       params["roof_type"],
+                "roof_pitch":      round(float(params["roof_pitch"]), 3),
+                "wall_color":      [round(float(params["wall_color_r"]), 3),
+                                    round(float(params["wall_color_g"]), 3),
+                                    round(float(params["wall_color_b"]), 3)],
+                "has_battlements": params["has_battlements"],
+                "has_arch":        params["has_arch"],
+                "eave_overhang":   round(float(params["eave_overhang"]), 3),
+                "column_count":    params["column_count"],
+                "window_shape":    params["window_shape"],
             },
         }
 
@@ -210,6 +222,102 @@ def export_trained_params(
         json.dump(result, f, indent=2, ensure_ascii=False)
     print(f"\n[导出] 训练结果已保存: {save_path}")
     return result
+
+
+# ─── 真实验证集构建 ───────────────────────────────────────────
+
+# 从 extracted_params 到 OUTPUT_KEYS 的直接映射（10 个可提取参数）
+_REAL_PARAM_MAP = {
+    "height_range_min":  "height_range_min",
+    "height_range_max":  "height_range_max",
+    "wall_thickness":    "wall_thickness",
+    "floor_thickness":   "floor_thickness",
+    "door_width":        "door_width",
+    "door_height":       "door_height",
+    "win_width":         "win_width",
+    "win_height":        "win_height",
+    "win_density":       "win_density",
+    "subdivision":       "subdivision",
+}
+
+
+def build_real_val_tensors(json_path: str) -> Tuple[np.ndarray, np.ndarray, list]:
+    """
+    从 extracted_params.json 构建真实验证集 (X, y)。
+
+    - X: feature vector by style  (n, FEATURE_DIM)
+    - y: normalized param vector  (n, OUTPUT_DIM)
+      10 个可提取参数用真实值归一化；其余 10 个用风格默认值填充。
+    返回 (X, y, style_labels)
+    """
+    with open(json_path, encoding="utf-8") as f:
+        data = json.load(f)
+
+    X_list, y_list, labels = [], [], []
+    skipped = 0
+
+    for m in data.get("models", []):
+        style = m.get("style", "")
+        if style not in STYLE_REGISTRY:
+            skipped += 1
+            continue
+
+        fv = get_feature_vector(style)           # (FEATURE_DIM,)
+        pv_default = get_param_vector(style)     # (OUTPUT_DIM,) already normalized
+
+        y_row = pv_default.copy()
+        for ext_key, out_key in _REAL_PARAM_MAP.items():
+            if ext_key not in m:
+                continue
+            idx = OUTPUT_KEYS.index(out_key)
+            lo, hi = OUTPUT_PARAMS[out_key]["range"]
+            raw_val = float(m[ext_key])
+            norm_val = float(np.clip((raw_val - lo) / (hi - lo + 1e-9), 0.0, 1.0))
+            y_row[idx] = norm_val
+
+        X_list.append(fv)
+        y_list.append(y_row)
+        labels.append(f"{style}/{m.get('file','?')}")
+
+    if skipped:
+        print(f"  [真实验证] 跳过 {skipped} 个未知风格样本")
+
+    return np.array(X_list, dtype=np.float32), np.array(y_list, dtype=np.float32), labels
+
+
+@torch.no_grad()
+def evaluate_real_validation(
+    model: nn.Module,
+    criterion: nn.Module,
+    device: torch.device,
+    json_path: str,
+) -> Tuple[float, float]:
+    """评估真实模型验证集，返回 (loss, mae)。"""
+    X_real, y_real, labels = build_real_val_tensors(json_path)
+    if len(X_real) == 0:
+        print("  [真实验证] 无有效样本，跳过")
+        return float("nan"), float("nan")
+
+    X_t = torch.from_numpy(X_real).to(device)
+    y_t = torch.from_numpy(y_real).to(device)
+
+    model.eval()
+    pred = model(X_t)
+    loss = criterion(pred, y_t).item()
+    mae  = torch.mean(torch.abs(pred - y_t)).item()
+
+    print(f"\n{'─' * 65}")
+    print(f"  真实模型验证集评估  ({len(labels)} 个模型)")
+    print(f"{'─' * 65}")
+    print(f"  {'模型':<50}  {'MAE':>8}")
+    per_sample_mae = torch.mean(torch.abs(pred - y_t), dim=1).cpu().numpy()
+    for lbl, m_mae in sorted(zip(labels, per_sample_mae), key=lambda x: x[1], reverse=True)[:10]:
+        print(f"  {lbl:<50}  {m_mae:.4f}")
+    if len(labels) > 10:
+        print(f"  ... (仅显示前10个最差样本)")
+    print(f"{'─' * 65}")
+    print(f"  真实验证集  Loss: {loss:.6f}  MAE: {mae:.6f}")
+    return loss, mae
 
 
 # ─── 训练主函数 ───────────────────────────────────────────────
@@ -226,6 +334,7 @@ def train(config: dict, output_dir: str = ".") -> nn.Module:
         n_interp_per_pair= config["n_interp_per_pair"],
         n_perturb        = config["n_perturb"],
         val_ratio        = config["val_ratio"],
+        styles           = config.get("styles"),
     )
 
     train_loader, val_loader = make_dataloaders(dataset, config["batch_size"], device)
@@ -325,6 +434,25 @@ def train(config: dict, output_dir: str = ".") -> nn.Module:
     export_path = output_dir / "trained_style_params.json"
     export_trained_params(model, device, config, save_path=str(export_path))
 
+    # ── 真实模型验证集对比 ──────────────────────────────────────
+    real_json = Path(__file__).parent / "validation_data" / "extracted_params.json"
+    if real_json.exists():
+        print("\n[对比] 合成验证集 vs 真实模型验证集")
+        print(f"  合成验证集  Loss: {best_val_loss:.6f}")
+        real_loss, real_mae = evaluate_real_validation(model, criterion, device, str(real_json))
+        ratio = real_loss / (best_val_loss + 1e-12)
+        print(f"\n  泛化比  (真实/合成): {ratio:.2f}x")
+        if ratio < 2.0:
+            print("  判断: 泛化良好 ✓")
+        elif ratio < 5.0:
+            print("  判断: 轻度过拟合，可接受")
+        else:
+            print("  判断: 明显过拟合，建议增加正则化或扩充真实数据")
+        config["_real_val_loss"] = round(real_loss, 8)
+        config["_real_val_mae"]  = round(real_mae,  8)
+    else:
+        print(f"\n[跳过] 未找到 {real_json}，跳过真实验证集评估")
+
     return model
 
 
@@ -341,6 +469,8 @@ def parse_args():
     parser.add_argument("--n-gaussian",   type=int,   default=DEFAULT_CONFIG["n_gaussian"])
     parser.add_argument("--n-interp",     type=int,   default=DEFAULT_CONFIG["n_interp_per_pair"])
     parser.add_argument("--n-perturb",    type=int,   default=DEFAULT_CONFIG["n_perturb"])
+    parser.add_argument("--styles",       type=str,   nargs="+", default=None,
+                        help="Only use these styles, e.g. --styles medieval")
     return parser.parse_args()
 
 
@@ -356,6 +486,7 @@ if __name__ == "__main__":
         "n_gaussian":        args.n_gaussian,
         "n_interp_per_pair": args.n_interp,
         "n_perturb":         args.n_perturb,
+        "styles":            args.styles,
     })
 
     print("=" * 65)

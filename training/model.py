@@ -1,9 +1,10 @@
 """
 LevelSmith 结构参数预测 MLP 模型
 
-架构: 16 → 128 → 64 → 32 → 10
+架构: 16 → 128 → 64 → 32 → 23
 - BatchNorm + Dropout 防止过拟合
 - Sigmoid 输出层确保输出在 [0,1] (归一化参数空间)
+- 输出维度: 原有10 + 视觉10 + 几何复杂度3 (mesh_complexity/detail_density/simple_ratio)
 """
 
 import torch
@@ -17,7 +18,7 @@ class StyleParamMLP(nn.Module):
 
     Args:
         input_dim:   特征向量维度 (默认 16)
-        output_dim:  输出参数数量 (默认 10)
+        output_dim:  输出参数数量 (默认 23)
         hidden_dims: 隐藏层维度列表 (默认 [128, 64, 32])
         dropout:     Dropout 概率
     """
@@ -25,7 +26,7 @@ class StyleParamMLP(nn.Module):
     def __init__(
         self,
         input_dim: int = 16,
-        output_dim: int = 10,
+        output_dim: int = 23,
         hidden_dims: List[int] = None,
         dropout: float = 0.2,
     ):
@@ -60,11 +61,14 @@ class StyleParamMLP(nn.Module):
         return self.net(x)
 
 
+# subdivision 在 OUTPUT_KEYS 中的固定位置（原有第10个参数，索引=9）
+_SUBDIV_IDX = 9
+
 class StyleParamLoss(nn.Module):
     """
     自定义损失函数：MSE + subdivision 整数惩罚项
 
-    subdivision (最后一个输出维度) 应为整数，额外增加惩罚使其趋向整数值。
+    subdivision 位于输出向量第 _SUBDIV_IDX 维（固定为索引9，新增参数追加在其后）。
     """
 
     def __init__(self, subdiv_weight: float = 0.1):
@@ -75,9 +79,8 @@ class StyleParamLoss(nn.Module):
     def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         mse_loss = self.mse(pred, target)
 
-        # subdivision 整数对齐惩罚 (最后一维)
-        subdiv_pred = pred[:, -1]
-        # 在归一化空间中, subdivision 步长 ≈ 1/7 (范围1-8共7步)
+        # subdivision 整数对齐惩罚（归一化空间中步长 ≈ 1/7，范围1-8共7步）
+        subdiv_pred = pred[:, _SUBDIV_IDX]
         step = 1.0 / 7.0
         subdiv_rounded = torch.round(subdiv_pred / step) * step
         subdiv_penalty = self.mse(subdiv_pred, subdiv_rounded.detach())
@@ -87,7 +90,7 @@ class StyleParamLoss(nn.Module):
 
 def build_model(
     input_dim: int = 16,
-    output_dim: int = 10,
+    output_dim: int = 20,
     hidden_dims: List[int] = None,
     dropout: float = 0.2,
     device: str = "cuda",

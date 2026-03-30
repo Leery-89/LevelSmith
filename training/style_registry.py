@@ -36,6 +36,7 @@ FEATURE_NAMES = [
 
 # 输出参数说明
 OUTPUT_PARAMS = {
+    # ── 原有 10 个参数 ──────────────────────────────────────────
     "height_range_min":    {"unit": "m", "range": (2.0,  6.0)},
     "height_range_max":    {"unit": "m", "range": (3.0, 20.0)},
     "wall_thickness":      {"unit": "m", "range": (0.1,  1.5)},
@@ -45,10 +46,35 @@ OUTPUT_PARAMS = {
     "win_width":           {"unit": "m", "range": (0.3,  3.0)},
     "win_height":          {"unit": "m", "range": (0.4,  3.0)},
     "win_density":         {"unit": "",  "range": (0.0,  1.0)},
-    "subdivision":         {"unit": "",  "range": (1,    8)},
+    "subdivision":         {"unit": "",  "range": (1.0,  8.0)},
+    # ── 新增 10 个参数 ──────────────────────────────────────────
+    "roof_type":           {"unit": "",  "range": (0.0,  4.0)},  # 0=平 1=坡 2=尖 3=翘角 4=穹顶
+    "roof_pitch":          {"unit": "",  "range": (0.0,  1.0)},
+    "wall_color_r":        {"unit": "",  "range": (0.0,  1.0)},
+    "wall_color_g":        {"unit": "",  "range": (0.0,  1.0)},
+    "wall_color_b":        {"unit": "",  "range": (0.0,  1.0)},
+    "has_battlements":     {"unit": "",  "range": (0.0,  1.0)},  # 0/1
+    "has_arch":            {"unit": "",  "range": (0.0,  1.0)},  # 0/1
+    "eave_overhang":       {"unit": "",  "range": (0.0,  1.0)},
+    "column_count":        {"unit": "",  "range": (0.0,  8.0)},
+    "window_shape":        {"unit": "",  "range": (0.0,  4.0)},  # 0=方形 1=尖拱 2=圆拱 3=格栅 4=横向长窗
+    # ── 新增 3 个几何复杂度参数 (来源: w3_mesh_features.json) ────
+    "mesh_complexity":     {"unit": "",  "range": (0.0,  1.0)},  # avg_faces / 14127 (W3 industrial max_faces)
+    "detail_density":      {"unit": "",  "range": (0.0,  1.0)},  # avg_chunks / 9.1 (W3 最大 avg_chunks)
+    "simple_ratio":        {"unit": "",  "range": (0.0,  1.0)},  # simple / (simple+medium+complex)
 }
-OUTPUT_DIM = len(OUTPUT_PARAMS)
+OUTPUT_DIM = len(OUTPUT_PARAMS)   # 23
 OUTPUT_KEYS = list(OUTPUT_PARAMS.keys())
+
+# 离散/整型输出参数 → 反归一化时取整，key: (min_int, max_int)
+DISCRETE_OUTPUT_PARAMS = {
+    "subdivision":     (1, 8),
+    "roof_type":       (0, 4),
+    "has_battlements": (0, 1),
+    "has_arch":        (0, 1),
+    "column_count":    (0, 8),
+    "window_shape":    (0, 4),
+}
 
 
 @dataclass
@@ -63,6 +89,7 @@ class StyleDefinition:
 
 def _default_noise() -> Dict[str, float]:
     return {
+        # 原有参数噪声（真实物理值幅度）
         "height_range_min": 0.3,
         "height_range_max": 1.0,
         "wall_thickness":   0.05,
@@ -73,6 +100,21 @@ def _default_noise() -> Dict[str, float]:
         "win_height":       0.15,
         "win_density":      0.08,
         "subdivision":      1.0,
+        # 新增参数噪声（归一化空间幅度，量纲为参数物理范围内的偏移）
+        "roof_type":        0.25,   # 轻微随机，不跨类型
+        "roof_pitch":       0.06,
+        "wall_color_r":     0.04,
+        "wall_color_g":     0.04,
+        "wall_color_b":     0.04,
+        "has_battlements":  0.05,   # 保持二值稳定
+        "has_arch":         0.05,
+        "eave_overhang":    0.06,
+        "column_count":     0.8,    # ±1根柱子
+        "window_shape":     0.20,   # 轻微扰动，不跨形状
+        # 几何复杂度噪声
+        "mesh_complexity":  0.05,
+        "detail_density":   0.05,
+        "simple_ratio":     0.05,
     }
 
 
@@ -1117,6 +1159,256 @@ DESERT_PALACE = StyleDefinition(
     param_noise_scale={**_default_noise(), "height_range_max": 1.5, "win_height": 0.25},
 )
 
+# ─── 新增参数（10个）的基准值与风格级边界 ────────────────────────
+# 每种风格的 "base" 键对应 base_params 追加值，
+# "bounds" 键对应 param_bounds 追加值（物理值，与原有 param_bounds 量纲一致）。
+# get_param_vector / get_style_bounds_normalized 会自动合并这里的数据。
+STYLE_EXTRA_PARAMS: Dict[str, Dict] = {
+    # W3 mesh data: avg_faces/14127, avg_chunks/9.1, simple/(s+m+c)
+    # Styles without W3 data estimated from parent/similar styles
+    "medieval": {  # W3: avg_faces=3624 chunks=5.8 s/m/c=228/312/40
+        "base":   {"roof_type": 1.0, "roof_pitch": 0.60,
+                   "wall_color_r": 0.64, "wall_color_g": 0.57, "wall_color_b": 0.48,
+                   "has_battlements": 1.0, "has_arch": 1.0, "eave_overhang": 0.20,
+                   "column_count": 2.0, "window_shape": 1.0,
+                   "mesh_complexity": 0.257, "detail_density": 0.637, "simple_ratio": 0.393},
+        "bounds": {"roof_type": (0.55, 1.45), "roof_pitch": (0.40, 0.80),
+                   "wall_color_r": (0.52, 0.76), "wall_color_g": (0.45, 0.68), "wall_color_b": (0.36, 0.60),
+                   "has_battlements": (0.55, 1.0), "has_arch": (0.55, 1.0), "eave_overhang": (0.05, 0.38),
+                   "column_count": (0.0, 4.0), "window_shape": (0.55, 1.45),
+                   "mesh_complexity": (0.15, 0.45), "detail_density": (0.45, 0.80), "simple_ratio": (0.25, 0.55)},
+    },
+    "modern": {  # W3: avg_faces=7522 chunks=6.2 s/m/c=130/252/33
+        "base":   {"roof_type": 0.0, "roof_pitch": 0.00,
+                   "wall_color_r": 0.78, "wall_color_g": 0.78, "wall_color_b": 0.78,
+                   "has_battlements": 0.0, "has_arch": 0.0, "eave_overhang": 0.10,
+                   "column_count": 0.0, "window_shape": 4.0,
+                   "mesh_complexity": 0.532, "detail_density": 0.681, "simple_ratio": 0.313},
+        "bounds": {"roof_type": (0.0, 0.45), "roof_pitch": (0.0, 0.12),
+                   "wall_color_r": (0.65, 0.92), "wall_color_g": (0.65, 0.92), "wall_color_b": (0.65, 0.92),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.0, 0.45), "eave_overhang": (0.0, 0.22),
+                   "column_count": (0.0, 2.0), "window_shape": (3.55, 4.0),
+                   "mesh_complexity": (0.35, 0.72), "detail_density": (0.50, 0.85), "simple_ratio": (0.18, 0.45)},
+    },
+    "industrial": {  # W3: avg_faces=1954 chunks=3.6 s/m/c=58/31/0
+        "base":   {"roof_type": 1.0, "roof_pitch": 0.30,
+                   "wall_color_r": 0.36, "wall_color_g": 0.34, "wall_color_b": 0.32,
+                   "has_battlements": 0.0, "has_arch": 0.0, "eave_overhang": 0.15,
+                   "column_count": 4.0, "window_shape": 3.0,
+                   "mesh_complexity": 0.138, "detail_density": 0.396, "simple_ratio": 0.652},
+        "bounds": {"roof_type": (0.55, 1.45), "roof_pitch": (0.15, 0.48),
+                   "wall_color_r": (0.24, 0.50), "wall_color_g": (0.22, 0.48), "wall_color_b": (0.20, 0.45),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.0, 0.45), "eave_overhang": (0.02, 0.30),
+                   "column_count": (2.0, 6.0), "window_shape": (2.55, 3.45),
+                   "mesh_complexity": (0.08, 0.28), "detail_density": (0.25, 0.55), "simple_ratio": (0.50, 0.80)},
+    },
+    "fantasy": {  # est. from fantasy_palace W3 data
+        "base":   {"roof_type": 2.0, "roof_pitch": 0.80,
+                   "wall_color_r": 0.55, "wall_color_g": 0.48, "wall_color_b": 0.60,
+                   "has_battlements": 1.0, "has_arch": 1.0, "eave_overhang": 0.30,
+                   "column_count": 4.0, "window_shape": 1.0,
+                   "mesh_complexity": 0.350, "detail_density": 0.615, "simple_ratio": 0.381},
+        "bounds": {"roof_type": (1.55, 2.45), "roof_pitch": (0.60, 1.0),
+                   "wall_color_r": (0.40, 0.70), "wall_color_g": (0.34, 0.62), "wall_color_b": (0.45, 0.76),
+                   "has_battlements": (0.55, 1.0), "has_arch": (0.55, 1.0), "eave_overhang": (0.12, 0.48),
+                   "column_count": (2.0, 6.0), "window_shape": (0.55, 1.45),
+                   "mesh_complexity": (0.20, 0.55), "detail_density": (0.42, 0.78), "simple_ratio": (0.22, 0.52)},
+    },
+    "horror": {  # W3: avg_faces=7635 chunks=9.1 s/m/c=30/25/20
+        "base":   {"roof_type": 2.0, "roof_pitch": 0.70,
+                   "wall_color_r": 0.28, "wall_color_g": 0.24, "wall_color_b": 0.22,
+                   "has_battlements": 0.0, "has_arch": 1.0, "eave_overhang": 0.25,
+                   "column_count": 0.0, "window_shape": 1.0,
+                   "mesh_complexity": 0.541, "detail_density": 1.000, "simple_ratio": 0.400},
+        "bounds": {"roof_type": (1.55, 2.45), "roof_pitch": (0.50, 0.90),
+                   "wall_color_r": (0.15, 0.42), "wall_color_g": (0.12, 0.38), "wall_color_b": (0.10, 0.36),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.55, 1.0), "eave_overhang": (0.08, 0.42),
+                   "column_count": (0.0, 2.0), "window_shape": (0.55, 1.45),
+                   "mesh_complexity": (0.35, 0.75), "detail_density": (0.80, 1.00), "simple_ratio": (0.25, 0.55)},
+    },
+    "japanese": {  # est. from medieval (similar avg complexity)
+        "base":   {"roof_type": 3.0, "roof_pitch": 0.50,
+                   "wall_color_r": 0.85, "wall_color_g": 0.78, "wall_color_b": 0.65,
+                   "has_battlements": 0.0, "has_arch": 0.0, "eave_overhang": 0.90,
+                   "column_count": 6.0, "window_shape": 3.0,
+                   "mesh_complexity": 0.300, "detail_density": 0.650, "simple_ratio": 0.350},
+        "bounds": {"roof_type": (2.55, 3.45), "roof_pitch": (0.35, 0.65),
+                   "wall_color_r": (0.72, 0.98), "wall_color_g": (0.65, 0.92), "wall_color_b": (0.52, 0.80),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.0, 0.45), "eave_overhang": (0.70, 1.0),
+                   "column_count": (4.0, 8.0), "window_shape": (2.55, 3.45),
+                   "mesh_complexity": (0.18, 0.48), "detail_density": (0.45, 0.82), "simple_ratio": (0.20, 0.50)},
+    },
+    "desert": {  # est. from industrial (simple geometry)
+        "base":   {"roof_type": 0.0, "roof_pitch": 0.00,
+                   "wall_color_r": 0.85, "wall_color_g": 0.75, "wall_color_b": 0.55,
+                   "has_battlements": 0.0, "has_arch": 1.0, "eave_overhang": 0.05,
+                   "column_count": 2.0, "window_shape": 2.0,
+                   "mesh_complexity": 0.150, "detail_density": 0.400, "simple_ratio": 0.620},
+        "bounds": {"roof_type": (0.0, 0.45), "roof_pitch": (0.0, 0.12),
+                   "wall_color_r": (0.72, 0.98), "wall_color_g": (0.62, 0.90), "wall_color_b": (0.40, 0.72),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.55, 1.0), "eave_overhang": (0.0, 0.18),
+                   "column_count": (0.0, 4.0), "window_shape": (1.55, 2.45),
+                   "mesh_complexity": (0.08, 0.30), "detail_density": (0.25, 0.55), "simple_ratio": (0.48, 0.78)},
+    },
+    "medieval_chapel": {  # est. from medieval parent
+        "base":   {"roof_type": 2.0, "roof_pitch": 0.75,
+                   "wall_color_r": 0.72, "wall_color_g": 0.68, "wall_color_b": 0.60,
+                   "has_battlements": 0.0, "has_arch": 1.0, "eave_overhang": 0.15,
+                   "column_count": 4.0, "window_shape": 1.0,
+                   "mesh_complexity": 0.300, "detail_density": 0.660, "simple_ratio": 0.360},
+        "bounds": {"roof_type": (1.55, 2.45), "roof_pitch": (0.58, 0.92),
+                   "wall_color_r": (0.58, 0.86), "wall_color_g": (0.54, 0.82), "wall_color_b": (0.46, 0.75),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.55, 1.0), "eave_overhang": (0.02, 0.30),
+                   "column_count": (2.0, 6.0), "window_shape": (0.55, 1.45),
+                   "mesh_complexity": (0.18, 0.48), "detail_density": (0.48, 0.82), "simple_ratio": (0.22, 0.50)},
+    },
+    "medieval_keep": {  # W3: avg_faces=9003 chunks=7.7 s/m/c=68/126/54
+        "base":   {"roof_type": 0.0, "roof_pitch": 0.00,
+                   "wall_color_r": 0.52, "wall_color_g": 0.48, "wall_color_b": 0.42,
+                   "has_battlements": 1.0, "has_arch": 1.0, "eave_overhang": 0.00,
+                   "column_count": 0.0, "window_shape": 0.0,
+                   "mesh_complexity": 0.637, "detail_density": 0.846, "simple_ratio": 0.274},
+        "bounds": {"roof_type": (0.0, 0.45), "roof_pitch": (0.0, 0.10),
+                   "wall_color_r": (0.38, 0.68), "wall_color_g": (0.34, 0.62), "wall_color_b": (0.28, 0.56),
+                   "has_battlements": (0.55, 1.0), "has_arch": (0.55, 1.0), "eave_overhang": (0.0, 0.10),
+                   "column_count": (0.0, 2.0), "window_shape": (0.0, 0.45),
+                   "mesh_complexity": (0.45, 0.85), "detail_density": (0.65, 1.00), "simple_ratio": (0.15, 0.40)},
+    },
+    "modern_loft": {  # W3: avg_faces=5630 chunks=5.1 s/m/c=83/86/10
+        "base":   {"roof_type": 0.0, "roof_pitch": 0.00,
+                   "wall_color_r": 0.72, "wall_color_g": 0.72, "wall_color_b": 0.70,
+                   "has_battlements": 0.0, "has_arch": 0.0, "eave_overhang": 0.00,
+                   "column_count": 4.0, "window_shape": 4.0,
+                   "mesh_complexity": 0.399, "detail_density": 0.560, "simple_ratio": 0.464},
+        "bounds": {"roof_type": (0.0, 0.45), "roof_pitch": (0.0, 0.10),
+                   "wall_color_r": (0.58, 0.88), "wall_color_g": (0.58, 0.88), "wall_color_b": (0.56, 0.86),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.0, 0.45), "eave_overhang": (0.0, 0.12),
+                   "column_count": (2.0, 6.0), "window_shape": (3.55, 4.0),
+                   "mesh_complexity": (0.25, 0.58), "detail_density": (0.38, 0.72), "simple_ratio": (0.32, 0.60)},
+    },
+    "modern_villa": {  # est. from modern parent
+        "base":   {"roof_type": 0.0, "roof_pitch": 0.00,
+                   "wall_color_r": 0.94, "wall_color_g": 0.94, "wall_color_b": 0.92,
+                   "has_battlements": 0.0, "has_arch": 0.0, "eave_overhang": 0.40,
+                   "column_count": 2.0, "window_shape": 4.0,
+                   "mesh_complexity": 0.480, "detail_density": 0.620, "simple_ratio": 0.340},
+        "bounds": {"roof_type": (0.0, 0.45), "roof_pitch": (0.0, 0.10),
+                   "wall_color_r": (0.80, 1.0), "wall_color_g": (0.80, 1.0), "wall_color_b": (0.78, 1.0),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.0, 0.45), "eave_overhang": (0.20, 0.62),
+                   "column_count": (0.0, 4.0), "window_shape": (3.55, 4.0),
+                   "mesh_complexity": (0.30, 0.65), "detail_density": (0.42, 0.78), "simple_ratio": (0.20, 0.48)},
+    },
+    "industrial_workshop": {  # est. from industrial parent (slightly more complex)
+        "base":   {"roof_type": 1.0, "roof_pitch": 0.35,
+                   "wall_color_r": 0.58, "wall_color_g": 0.42, "wall_color_b": 0.32,
+                   "has_battlements": 0.0, "has_arch": 0.0, "eave_overhang": 0.20,
+                   "column_count": 6.0, "window_shape": 3.0,
+                   "mesh_complexity": 0.180, "detail_density": 0.450, "simple_ratio": 0.600},
+        "bounds": {"roof_type": (0.55, 1.45), "roof_pitch": (0.18, 0.52),
+                   "wall_color_r": (0.44, 0.72), "wall_color_g": (0.28, 0.56), "wall_color_b": (0.18, 0.46),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.0, 0.45), "eave_overhang": (0.05, 0.35),
+                   "column_count": (4.0, 8.0), "window_shape": (2.55, 3.45),
+                   "mesh_complexity": (0.10, 0.32), "detail_density": (0.30, 0.60), "simple_ratio": (0.45, 0.75)},
+    },
+    "industrial_powerplant": {  # est. from industrial (simplest geometry, max simple_ratio)
+        "base":   {"roof_type": 0.0, "roof_pitch": 0.00,
+                   "wall_color_r": 0.45, "wall_color_g": 0.44, "wall_color_b": 0.42,
+                   "has_battlements": 0.0, "has_arch": 0.0, "eave_overhang": 0.00,
+                   "column_count": 8.0, "window_shape": 3.0,
+                   "mesh_complexity": 0.120, "detail_density": 0.350, "simple_ratio": 0.700},
+        "bounds": {"roof_type": (0.0, 1.45), "roof_pitch": (0.0, 0.22),
+                   "wall_color_r": (0.30, 0.60), "wall_color_g": (0.30, 0.58), "wall_color_b": (0.28, 0.56),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.0, 0.45), "eave_overhang": (0.0, 0.12),
+                   "column_count": (6.0, 8.0), "window_shape": (2.55, 3.45),
+                   "mesh_complexity": (0.06, 0.25), "detail_density": (0.20, 0.50), "simple_ratio": (0.55, 0.85)},
+    },
+    "fantasy_dungeon": {  # est. from fantasy parent (medium complexity, low simple)
+        "base":   {"roof_type": 0.0, "roof_pitch": 0.00,
+                   "wall_color_r": 0.30, "wall_color_g": 0.28, "wall_color_b": 0.26,
+                   "has_battlements": 0.0, "has_arch": 1.0, "eave_overhang": 0.00,
+                   "column_count": 4.0, "window_shape": 0.0,
+                   "mesh_complexity": 0.320, "detail_density": 0.700, "simple_ratio": 0.350},
+        "bounds": {"roof_type": (0.0, 0.45), "roof_pitch": (0.0, 0.10),
+                   "wall_color_r": (0.16, 0.44), "wall_color_g": (0.14, 0.42), "wall_color_b": (0.12, 0.40),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.55, 1.0), "eave_overhang": (0.0, 0.10),
+                   "column_count": (2.0, 6.0), "window_shape": (0.0, 1.45),
+                   "mesh_complexity": (0.18, 0.50), "detail_density": (0.50, 0.88), "simple_ratio": (0.20, 0.50)},
+    },
+    "fantasy_palace": {  # W3: avg_faces=3783 chunks=5.6 s/m/c=103/145/22
+        "base":   {"roof_type": 4.0, "roof_pitch": 0.90,
+                   "wall_color_r": 0.92, "wall_color_g": 0.88, "wall_color_b": 0.75,
+                   "has_battlements": 1.0, "has_arch": 1.0, "eave_overhang": 0.30,
+                   "column_count": 8.0, "window_shape": 2.0,
+                   "mesh_complexity": 0.268, "detail_density": 0.615, "simple_ratio": 0.381},
+        "bounds": {"roof_type": (3.55, 4.0), "roof_pitch": (0.72, 1.0),
+                   "wall_color_r": (0.78, 1.0), "wall_color_g": (0.74, 1.0), "wall_color_b": (0.58, 0.92),
+                   "has_battlements": (0.55, 1.0), "has_arch": (0.55, 1.0), "eave_overhang": (0.12, 0.50),
+                   "column_count": (6.0, 8.0), "window_shape": (1.55, 2.45),
+                   "mesh_complexity": (0.15, 0.45), "detail_density": (0.42, 0.78), "simple_ratio": (0.22, 0.52)},
+    },
+    "horror_asylum": {  # est. from horror parent
+        "base":   {"roof_type": 1.0, "roof_pitch": 0.40,
+                   "wall_color_r": 0.58, "wall_color_g": 0.55, "wall_color_b": 0.52,
+                   "has_battlements": 0.0, "has_arch": 0.0, "eave_overhang": 0.10,
+                   "column_count": 2.0, "window_shape": 0.0,
+                   "mesh_complexity": 0.500, "detail_density": 0.900, "simple_ratio": 0.420},
+        "bounds": {"roof_type": (0.55, 1.45), "roof_pitch": (0.24, 0.56),
+                   "wall_color_r": (0.44, 0.72), "wall_color_g": (0.40, 0.68), "wall_color_b": (0.38, 0.66),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.0, 0.45), "eave_overhang": (0.0, 0.22),
+                   "column_count": (0.0, 4.0), "window_shape": (0.0, 0.45),
+                   "mesh_complexity": (0.32, 0.68), "detail_density": (0.72, 1.00), "simple_ratio": (0.28, 0.58)},
+    },
+    "horror_crypt": {  # est. from horror parent (higher density, darker)
+        "base":   {"roof_type": 2.0, "roof_pitch": 0.65,
+                   "wall_color_r": 0.22, "wall_color_g": 0.20, "wall_color_b": 0.20,
+                   "has_battlements": 0.0, "has_arch": 1.0, "eave_overhang": 0.05,
+                   "column_count": 0.0, "window_shape": 1.0,
+                   "mesh_complexity": 0.580, "detail_density": 0.950, "simple_ratio": 0.380},
+        "bounds": {"roof_type": (1.55, 2.45), "roof_pitch": (0.48, 0.82),
+                   "wall_color_r": (0.10, 0.35), "wall_color_g": (0.08, 0.32), "wall_color_b": (0.08, 0.32),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.55, 1.0), "eave_overhang": (0.0, 0.18),
+                   "column_count": (0.0, 2.0), "window_shape": (0.55, 1.45),
+                   "mesh_complexity": (0.38, 0.78), "detail_density": (0.78, 1.00), "simple_ratio": (0.22, 0.52)},
+    },
+    "japanese_temple": {  # est. from japanese parent (higher complexity)
+        "base":   {"roof_type": 3.0, "roof_pitch": 0.65,
+                   "wall_color_r": 0.72, "wall_color_g": 0.20, "wall_color_b": 0.12,
+                   "has_battlements": 0.0, "has_arch": 0.0, "eave_overhang": 1.00,
+                   "column_count": 8.0, "window_shape": 3.0,
+                   "mesh_complexity": 0.380, "detail_density": 0.720, "simple_ratio": 0.300},
+        "bounds": {"roof_type": (2.55, 3.45), "roof_pitch": (0.50, 0.82),
+                   "wall_color_r": (0.56, 0.88), "wall_color_g": (0.08, 0.32), "wall_color_b": (0.04, 0.22),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.0, 0.45), "eave_overhang": (0.80, 1.0),
+                   "column_count": (6.0, 8.0), "window_shape": (2.55, 3.45),
+                   "mesh_complexity": (0.22, 0.55), "detail_density": (0.52, 0.88), "simple_ratio": (0.18, 0.45)},
+    },
+    "japanese_machiya": {  # est. from japanese parent (simpler)
+        "base":   {"roof_type": 1.0, "roof_pitch": 0.55,
+                   "wall_color_r": 0.32, "wall_color_g": 0.26, "wall_color_b": 0.22,
+                   "has_battlements": 0.0, "has_arch": 0.0, "eave_overhang": 0.70,
+                   "column_count": 4.0, "window_shape": 3.0,
+                   "mesh_complexity": 0.220, "detail_density": 0.550, "simple_ratio": 0.420},
+        "bounds": {"roof_type": (0.55, 1.45), "roof_pitch": (0.38, 0.72),
+                   "wall_color_r": (0.20, 0.46), "wall_color_g": (0.14, 0.40), "wall_color_b": (0.10, 0.34),
+                   "has_battlements": (0.0, 0.45), "has_arch": (0.0, 0.45), "eave_overhang": (0.50, 0.90),
+                   "column_count": (2.0, 6.0), "window_shape": (2.55, 3.45),
+                   "mesh_complexity": (0.12, 0.38), "detail_density": (0.38, 0.72), "simple_ratio": (0.30, 0.58)},
+    },
+    "desert_palace": {  # est. from desert parent (higher complexity)
+        "base":   {"roof_type": 4.0, "roof_pitch": 0.85,
+                   "wall_color_r": 0.95, "wall_color_g": 0.90, "wall_color_b": 0.78,
+                   "has_battlements": 1.0, "has_arch": 1.0, "eave_overhang": 0.15,
+                   "column_count": 6.0, "window_shape": 2.0,
+                   "mesh_complexity": 0.280, "detail_density": 0.550, "simple_ratio": 0.450},
+        "bounds": {"roof_type": (3.55, 4.0), "roof_pitch": (0.68, 1.0),
+                   "wall_color_r": (0.80, 1.0), "wall_color_g": (0.75, 1.0), "wall_color_b": (0.62, 0.94),
+                   "has_battlements": (0.55, 1.0), "has_arch": (0.55, 1.0), "eave_overhang": (0.02, 0.30),
+                   "column_count": (4.0, 8.0), "window_shape": (1.55, 2.45),
+                   "mesh_complexity": (0.16, 0.45), "detail_density": (0.35, 0.72), "simple_ratio": (0.30, 0.62)},
+    },
+}
+
+
 # 风格注册表
 STYLE_REGISTRY: Dict[str, StyleDefinition] = {
     "medieval":              MEDIEVAL,
@@ -1153,11 +1445,18 @@ def get_style_bounds_normalized(style_name: str) -> np.ndarray:
     """
     返回指定风格每个输出参数的归一化边界，shape: [OUTPUT_DIM, 2]
     每行 [lo_norm, hi_norm]，基于 param_bounds 中的物理值上下界换算。
+    新增参数从 STYLE_EXTRA_PARAMS 补充。
     """
     style = STYLE_REGISTRY[style_name]
+    extra_bounds = STYLE_EXTRA_PARAMS.get(style_name, {}).get("bounds", {})
     bounds = np.zeros((OUTPUT_DIM, 2), dtype=np.float32)
     for i, key in enumerate(OUTPUT_KEYS):
-        phys_lo, phys_hi = style.param_bounds[key]
+        if key in style.param_bounds:
+            phys_lo, phys_hi = style.param_bounds[key]
+        elif key in extra_bounds:
+            phys_lo, phys_hi = extra_bounds[key]
+        else:
+            phys_lo, phys_hi = OUTPUT_PARAMS[key]["range"]
         g_lo, g_hi = OUTPUT_PARAMS[key]["range"]
         bounds[i, 0] = (phys_lo - g_lo) / (g_hi - g_lo)
         bounds[i, 1] = (phys_hi - g_lo) / (g_hi - g_lo)
@@ -1170,25 +1469,36 @@ def get_feature_vector(style_name: str) -> np.ndarray:
 
 
 def get_param_vector(style_name: str) -> np.ndarray:
-    """返回指定风格的参数向量 (numpy array, shape: [10])，已归一化到 [0,1]"""
+    """返回指定风格的参数向量 (numpy array, shape: [OUTPUT_DIM])，已归一化到 [0,1]
+    原有10个参数来自 StyleDefinition.base_params；新增10个来自 STYLE_EXTRA_PARAMS。
+    """
     style = STYLE_REGISTRY[style_name]
+    extra_base = STYLE_EXTRA_PARAMS.get(style_name, {}).get("base", {})
     values = []
     for key in OUTPUT_KEYS:
-        raw = style.base_params[key]
+        if key in style.base_params:
+            raw = style.base_params[key]
+        elif key in extra_base:
+            raw = extra_base[key]
+        else:
+            raw = OUTPUT_PARAMS[key]["range"][0]  # 缺失时取全局最小值
         lo, hi = OUTPUT_PARAMS[key]["range"]
         values.append((raw - lo) / (hi - lo))
     return np.clip(np.array(values, dtype=np.float32), 0.0, 1.0)
 
 
 def denormalize_params(normalized: np.ndarray) -> Dict[str, float]:
-    """将归一化参数向量还原为真实物理值"""
+    """将归一化参数向量还原为真实物理值。
+    subdivision 及新增离散/二值参数自动取整并 clamp 到合法范围。
+    """
     result = {}
     for i, key in enumerate(OUTPUT_KEYS):
         lo, hi = OUTPUT_PARAMS[key]["range"]
         val = float(normalized[i]) * (hi - lo) + lo
-        if key == "subdivision":
-            val = round(max(1, min(8, val)))
-        result[key] = round(val, 4)
+        if key in DISCRETE_OUTPUT_PARAMS:
+            d_lo, d_hi = DISCRETE_OUTPUT_PARAMS[key]
+            val = int(round(max(d_lo, min(d_hi, val))))
+        result[key] = round(val, 4) if not isinstance(val, int) else val
     return result
 
 

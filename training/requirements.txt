@@ -1,2 +1,24 @@
+# ── Core ──
 torch>=2.0.0
 numpy>=1.24.0
+trimesh>=4.0.0
+shapely>=2.0.0
+scipy>=1.10.0
+manifold3d>=3.0.0
+
+# ── Web Agent ──
+fastapi>=0.100.0
+uvicorn>=0.20.0
+python-multipart>=0.0.6
+
+# ── LLM prompt parsing (optional, falls back to regex) ──
+openai>=1.0.0
+
+# ── Training data extraction (optional) ──
+lxml>=4.9.0
+# osmnx>=2.0.0        # for fetch_osm_layout.py
+
+# ── Hardware config (optional) ──
+psutil>=5.9.0
+onnx>=1.14.0
+onnxruntime-directml>=1.16.0   # Windows DirectML; or onnxruntime for CPU-only

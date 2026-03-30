@@ -1,0 +1,48 @@
+# ── Data (contains copyrighted W3/Sketchfab content) ──
+training_data/
+validation_data/
+generated/
+cache/
+
+# ── Model weights (too large for git) ──
+models/*.pt
+models/*.onnx
+*.pt
+*.onnx
+
+# ── Generated level files ──
+*.glb
+*.fbx
+
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Environment ──
+.env
+.env.*
+*.log
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ──
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# ── Training artifacts ──
+train_history.json
+comparison_report.json
+trained_style_params.json
+training_logs/
+results/

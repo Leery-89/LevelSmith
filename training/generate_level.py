@@ -21,12 +21,12 @@ except ImportError:
     import trimesh
 
 try:
-    from shapely.geometry import Polygon, box as shapely_box
+    from shapely.geometry import Polygon, box as shapely_box, LineString
     from shapely.affinity import translate as shapely_translate
 except ImportError:
     import subprocess
     subprocess.check_call([sys.executable, "-m", "pip", "install", "shapely"])
-    from shapely.geometry import Polygon, box as shapely_box
+    from shapely.geometry import Polygon, box as shapely_box, LineString
     from shapely.affinity import translate as shapely_translate
 
 # ─── 布局常量 ──────────────────────────────────────────────────
@@ -121,9 +121,18 @@ def make_u_footprint(w=ROOM_W, d=ROOM_D, notch_frac_x=0.4, notch_frac_z=0.55):
 # ─── 几何工具 ─────────────────────────────────────────────────
 
 def make_box(size, center, color):
-    """创建带颜色的 box mesh"""
-    b = trimesh.creation.box(extents=np.array(size, dtype=float))
-    b.apply_translation(np.array(center, dtype=float))
+    """创建带颜色的 box mesh。
+    只有 extents >= 0.05 的维度才做 round(3) 对齐。
+    避免对薄板（门/窗）的微小维度做舍入导致退化。
+    """
+    extents = np.array(size, dtype=np.float64)
+    center  = np.array(center, dtype=np.float64)
+    b = trimesh.creation.box(extents=extents)
+    b.apply_translation(center)
+    # 只对 >=0.05 的维度做 round(3) → 消除墙段接缝，不伤薄板
+    for ax in range(3):
+        if extents[ax] >= 0.05:
+            b.vertices[:, ax] = np.round(b.vertices[:, ax], 3)
     c = np.array(color, dtype=np.uint8)
     b.visual.face_colors = np.tile(c, (len(b.faces), 1))
     return b
@@ -146,15 +155,22 @@ def make_extruded_polygon(polygon, height, color):
     return mesh
 
 
+def _r3(v):
+    """Round to 3 decimal places — eliminates float seam artifacts."""
+    return round(float(v), 3)
+
+
 def _wall_segments(total_len, openings):
     """
     将墙长切割成若干区段，返回 [(x0, x1, opening_or_None), ...]
     opening 含 {"x", "w", "y", "h"}
+    所有坐标 round(3) 保证相邻段顶点完全对齐。
     """
+    total_len = _r3(total_len)
     xs = sorted(set(
         [0.0] +
-        [max(0.0, o["x"]) for o in openings] +
-        [min(total_len, o["x"] + o["w"]) for o in openings] +
+        [_r3(max(0.0, o["x"])) for o in openings] +
+        [_r3(min(total_len, o["x"] + o["w"])) for o in openings] +
         [total_len]
     ))
     segments = []
@@ -164,57 +180,83 @@ def _wall_segments(total_len, openings):
             continue
         op = next(
             (o for o in openings
-             if o["x"] <= x0 + 1e-4 and o["x"] + o["w"] >= x1 - 1e-4),
+             if _r3(o["x"]) <= x0 + 1e-4 and _r3(o["x"] + o["w"]) >= x1 - 1e-4),
             None
         )
         segments.append((x0, x1, op))
     return segments
 
 
+def _boolean_wall(solid, openings_list, color):
+    """
+    从完整墙体 solid 中用布尔运算减去所有开口。
+    返回单个 mesh（无接缝、法线连续）。
+    openings_list: [trimesh.Trimesh, ...] 每个是贯穿墙体的 box
+    """
+    result = solid
+    for hole in openings_list:
+        try:
+            result = trimesh.boolean.difference([result, hole], engine='manifold')
+        except Exception:
+            pass   # 布尔失败则跳过该开口，保留实墙
+    trimesh.repair.fix_normals(result)
+    c = np.array(color, dtype=np.uint8)
+    result.visual.face_colors = np.tile(c, (len(result.faces), 1))
+    return result
+
+
 def build_x_wall(total_w, height, thickness, openings, color, wx, wz):
     """
-    沿 X 方向的墙体（前/后墙），支持开口。
-    wx: 世界 X 起点偏移, wz: 世界 Z 中心
+    沿 X 方向的墙体（前/后墙）。
+    用布尔运算从完整墙体中减去门窗开口 → 无接缝，法线连续。
     """
-    panels = []
-    for x0, x1, op in _wall_segments(total_w, openings):
-        seg_w = x1 - x0
-        cx = wx + (x0 + x1) / 2
-        if op is None:
-            panels.append(make_box([seg_w, height, thickness], [cx, height / 2, wz], color))
-        else:
-            y0 = max(0.0, op["y"])
-            y1 = min(height, op["y"] + op["h"])
-            if y0 > 1e-4:
-                panels.append(make_box([seg_w, y0, thickness], [cx, y0 / 2, wz], color))
-            above = height - y1
-            if above > 1e-4:
-                panels.append(make_box([seg_w, above, thickness], [cx, y1 + above / 2, wz], color))
-    return panels
+    # 完整实墙
+    solid = trimesh.creation.box(extents=[total_w, height, thickness])
+    solid.apply_translation([wx + total_w / 2, height / 2, wz])
+
+    # 开口切割体（比墙厚 × 2 确保贯穿）
+    holes = []
+    for op in openings:
+        y0 = max(0.0, op.get("y", 0.0))
+        h  = op.get("h", height)
+        w  = op.get("w", 1.0)
+        x  = op.get("x", 0.0)
+        hole = trimesh.creation.box(extents=[w, h, thickness * 2])
+        hole.apply_translation([wx + x + w / 2, y0 + h / 2, wz])
+        holes.append(hole)
+
+    if not holes:
+        c = np.array(color, dtype=np.uint8)
+        solid.visual.face_colors = np.tile(c, (len(solid.faces), 1))
+        return [solid]
+
+    return [_boolean_wall(solid, holes, color)]
 
 
 def build_z_wall(total_d, height, thickness, openings_z, color, wx, wz):
     """
-    沿 Z 方向的墙体（左/右墙），支持开口。
-    openings_z: [{"z", "w", "y", "h"}, ...]
-    wx: 世界 X 中心, wz: 世界 Z 起点偏移
+    沿 Z 方向的墙体（左/右墙）。
+    布尔运算：完整实墙 - 窗口开口。
     """
-    ops_as_x = [{"x": o["z"], "w": o["w"], "y": o["y"], "h": o["h"]} for o in openings_z]
-    panels = []
-    for x0, x1, op in _wall_segments(total_d, ops_as_x):
-        seg_len = x1 - x0
-        cz = wz + (x0 + x1) / 2
-        if op is None:
-            panels.append(make_box([thickness, height, seg_len], [wx, height / 2, cz], color))
-        else:
-            y0 = max(0.0, op["y"])
-            y1 = min(height, op["y"] + op["h"])
-            if y0 > 1e-4:
-                panels.append(make_box([thickness, y0, seg_len], [wx, y0 / 2, cz], color))
-            above = height - y1
-            if above > 1e-4:
-                panels.append(make_box([thickness, above, seg_len], [wx, y1 + above / 2, cz], color))
-    return panels
+    solid = trimesh.creation.box(extents=[thickness, height, total_d])
+    solid.apply_translation([wx, height / 2, wz + total_d / 2])
+
+    holes = []
+    for op in openings_z:
+        y0 = max(0.0, op.get("y", 0.0))
+        h  = op.get("h", height)
+        w  = op.get("w", 1.0)
+        z  = op.get("z", 0.0)
+        hole = trimesh.creation.box(extents=[thickness * 2, h, w])
+        hole.apply_translation([wx, y0 + h / 2, wz + z + w / 2])
+        holes.append(hole)
+
+    if not holes:
+        c = np.array(color, dtype=np.uint8)
+        solid.visual.face_colors = np.tile(c, (len(solid.faces), 1))
+        return [solid]
+
+    return [_boolean_wall(solid, holes, color)]
 
 
 def build_edge_wall(p0, p1, height, wall_t, openings, color, x_off, z_off):
@@ -298,7 +340,7 @@ def build_edge_wall(p0, p1, height, wall_t, openings, color, x_off, z_off):
 
 def place_windows_x(wall_len, height, win_w, win_h, density, subdiv, sill=0.9):
     """沿 X 方向墙体计算窗户开口列表"""
-    if density < 0.12:
+    if density <= 0.0:
         return []
     n = max(1, round(density * subdiv))
     n = min(n, max(1, int(wall_len / (win_w + 0.5))))
@@ -316,7 +358,7 @@ def place_windows_x(wall_len, height, win_w, win_h, density, subdiv, sill=0.9):
 
 def place_windows_z(wall_dep, height, win_w, win_h, density, subdiv, sill=0.9):
     """沿 Z 方向墙体计算窗户开口列表（密度打七折）"""
-    if density < 0.12:
+    if density <= 0.0:
         return []
     n = max(1, round(density * subdiv * 0.7))
     n = min(n, max(1, int(wall_dep / (win_w + 0.5))))
@@ -333,11 +375,16 @@ def place_windows_z(wall_dep, height, win_w, win_h, density, subdiv, sill=0.9):
 
 
 def place_windows_edge(edge_len, height, win_w, win_h, density, subdiv, sill=0.9):
-    """沿任意轮廓边计算窗户开口（按边长缩放密度）"""
-    if density < 0.12 or edge_len < win_w + 0.5:
+    """
+    沿任意轮廓边计算窗户开口（均匀分布）。
+    保证：每面外墙至少放 1 扇窗（即使 density=0）。
+    """
+    if edge_len < win_w + 0.5:
         return []
-    n = max(1, round(density * subdiv * (edge_len / ROOM_W)))
-    n = min(n, max(1, int(edge_len / (win_w + 0.5))))
+    # 即使 density 极低，每面墙至少 1 扇窗
+    eff_density = max(density, 0.08)
+    n = max(1, round(edge_len * eff_density / (win_w * 1.5)))
+    n = min(n, max(1, int(edge_len / (win_w + 0.4))))
     gap = max(0.35, (edge_len - n * win_w) / (n + 1))
     result, x = [], gap
     for _ in range(n):
@@ -352,26 +399,42 @@ def place_windows_edge(edge_len, height, win_w, win_h, density, subdiv, sill=0.9
 
 # ─── 玻璃填充 ─────────────────────────────────────────────────
 
-def add_glass_x(openings, wz, wx_base, palette, meshes):
-    """在 X 方向墙体的窗口位置放玻璃板"""
+def add_glass_x(openings, wz, wx_base, palette, meshes, wall_t=0.3):
+    """X 方向墙体窗口玻璃。
+    - 尺寸：比窗洞每边小 2cm
+    - 厚度：wall_t * 0.08（最少 2cm，最多 5cm）
+    - Z = wz（墙体中心线），严格在 [wz-wall_t/2, wz+wall_t/2] 内
+    """
+    glass_t = max(0.02, min(0.05, wall_t * 0.08))
     for op in openings:
         h = op["h"]
-        meshes.append(make_box(
-            [op["w"] - 0.06, h - 0.06, 0.02],
-            [wx_base + op["x"] + op["w"] / 2, op["y"] + h / 2, wz],
-            palette["window"]
-        ))
+        gw = op["w"] - 0.04    # 比窗洞每边小 2cm
+        gh = h - 0.04
+        if gw > 0.05 and gh > 0.05:
+            meshes.append(make_box(
+                [gw, gh, glass_t],
+                [wx_base + op["x"] + op["w"] / 2, op["y"] + h / 2, wz],
+                palette["window"]
+            ))
 
 
-def add_glass_z(openings, wx, wz_base, palette, meshes):
-    """在 Z 方向墙体的窗口位置放玻璃板"""
+def add_glass_z(openings, wx, wz_base, palette, meshes, wall_t=0.3):
+    """Z 方向墙体窗口玻璃。
+    - 尺寸：比窗洞每边小 2cm
+    - 厚度：wall_t * 0.08
+    - X = wx（墙体中心线）
+    """
+    glass_t = max(0.02, min(0.05, wall_t * 0.08))
     for op in openings:
         h = op["h"]
-        meshes.append(make_box(
-            [0.02, h - 0.06, op["w"] - 0.06],
-            [wx, op["y"] + h / 2, wz_base + op["z"] + op["w"] / 2],
-            palette["window"]
-        ))
+        gw = op["w"] - 0.04
+        gh = h - 0.04
+        if gw > 0.05 and gh > 0.05:
+            meshes.append(make_box(
+                [glass_t, gh, gw],
+                [wx, op["y"] + h / 2, wz_base + op["z"] + op["w"] / 2],
+                palette["window"]
+            ))
 
 
 # ─── 门框 ─────────────────────────────────────────────────────
@@ -383,6 +446,28 @@ def add_door_frame(door_x, door_w, door_h, wall_t, wx, wz, palette, meshes):
     meshes.append(make_box([f, door_h + f, wall_t + 0.04], [wx + door_x,           door_h / 2,  wz], palette["door"]))
     meshes.append(make_box([f, door_h + f, wall_t + 0.04], [wx + door_x + door_w,  door_h / 2,  wz], palette["door"]))
     meshes.append(make_box([door_w + f * 2, f, wall_t + 0.04], [cx, door_h + f / 2, wz], palette["door"]))
+
+
+def add_door_panel(door_x, door_w, door_h, wall_t, wx, wz, palette, meshes):
+    """
+    最简门板：一个标准 trimesh box。
+    - 尺寸：(door_w - 0.02) x (door_h - 0.02) x 0.04
+    - 位置：墙面内侧 2cm 处（wz + wall_t/2 - 0.02）
+    - 底边贴地（Y center = panel_h / 2）
+    """
+    pw = door_w - 0.02
+    ph = door_h - 0.02
+    pt = 0.04
+    if pw < 0.1 or ph < 0.1:
+        return
+    cx = wx + door_x + door_w / 2
+    # 墙内侧 = wz + wall_t/2，门板向内缩 2cm
+    pz = wz + wall_t / 2 - 0.02
+    panel = trimesh.creation.box(extents=[pw, ph, pt])
+    panel.apply_translation([cx, ph / 2, pz])
+    c = np.array(palette["door"], dtype=np.uint8)
+    panel.visual.face_colors = np.tile(c, (len(panel.faces), 1))
+    meshes.append(panel)
 
 
 # ─── 多边形轮廓墙体生成 ────────────────────────────────────────
@@ -420,7 +505,8 @@ def build_polygon_walls(footprint, height, wall_t, params, palette, x_off, z_off
     - 前墙（z≈0）放门，其余边根据密度放窗
     """
     door_w  = float(params["door_spec"]["width"])
-    door_h  = min(float(params["door_spec"]["height"]), height - 0.15)
+    door_h  = max(min(float(params["door_spec"]["height"]), height - 0.15),
+                  min(height * 0.45, 2.8))
     win_w   = float(params["win_spec"]["width"])
     win_h   = float(params["win_spec"]["height"])
     win_d   = float(params["win_spec"]["density"])
@@ -449,33 +535,54 @@ def build_polygon_walls(footprint, height, wall_t, params, palette, x_off, z_off
         is_front = (edge_type == "front") and not door_placed
 
         if is_front and edge_len >= door_w + 0.5:
-            # 放门
-            door_x = (edge_len - door_w) / 2
+            # 放门（居中）+ 门两侧各加一扇窗
+            door_x = _r3((edge_len - door_w) / 2)
             openings = [{"x": door_x, "w": door_w, "y": 0.0, "h": door_h}]
             door_placed = True
+            win_sill    = 0.9
+            win_h_use   = min(win_h, height - win_sill - 0.1)
+            if win_h_use > 0.1:
+                # 左侧窗：如果空间足够放窗（最小 win_w + 0.3m 边距）
+                left_space = door_x
+                fit_w = min(win_w, left_space - 0.3) if left_space > 0.6 else 0
+                if fit_w > 0.3:
+                    lw_x = _r3((left_space - fit_w) / 2)
+                    openings.append({"x": lw_x, "w": _r3(fit_w),
+                                     "y": win_sill, "h": win_h_use, "is_window": True})
+                # 右侧窗
+                right_start = door_x + door_w
+                right_space = edge_len - right_start
+                fit_w = min(win_w, right_space - 0.3) if right_space > 0.6 else 0
+                if fit_w > 0.3:
+                    rw_x = _r3(right_start + (right_space - fit_w) / 2)
+                    openings.append({"x": rw_x, "w": _r3(fit_w),
+                                     "y": win_sill, "h": win_h_use, "is_window": True})
         else:
-            # 放窗
+            # 非前墙：按密度放窗（保证至少1扇）
             wins = place_windows_edge(edge_len, height, win_w, win_h, win_d, subdiv)
             openings = wins
 
         if is_x_aligned:
-            # X 轴对齐的墙：使用简化的 build_x_wall
-            # p0.x 较小时方向为正 X，否则为负 X
-            wx_start = x_off + min(p0[0], p1[0])
-            wz_center = z_off + p0[1]  # z 恒定
-            wall_meshes = build_x_wall(edge_len, height, wall_t, openings, palette["wall"], wx_start, wz_center)
+            # X 轴对齐的墙（前/后墙）
+            # 向两端各延伸 wall_t/2 填补墙角缝隙
+            wx_start = x_off + min(p0[0], p1[0]) - wall_t / 2
+            ext_len  = edge_len + wall_t   # 延伸后总长
+            wz_center = z_off + p0[1]
+            # 开口坐标也需偏移 wall_t/2（因为墙起点变了）
+            shifted_ops = [dict(o, x=o["x"] + wall_t / 2) for o in openings]
+            wall_meshes = build_x_wall(ext_len, height, wall_t, shifted_ops, palette["wall"], wx_start, wz_center)
             meshes.extend(wall_meshes)
 
             if is_front and door_placed:
-                door_x_abs = (edge_len - door_w) / 2
+                door_x_abs = (edge_len - door_w) / 2 + wall_t / 2
                 add_door_frame(door_x_abs, door_w, door_h, wall_t, wx_start, wz_center, palette, meshes)
+                add_door_panel(door_x_abs, door_w, door_h, wall_t, wx_start, wz_center, palette, meshes)
             else:
-                # 玻璃
-                glass_wins = [o for o in openings if o.get("is_window")]
-                add_glass_x(glass_wins, wz_center, wx_start, palette, meshes)
+                glass_wins = [dict(o, x=o["x"] + wall_t / 2) for o in openings if o.get("is_window")]
+                add_glass_x(glass_wins, wz_center, wx_start, palette, meshes, wall_t)
 
         elif is_z_aligned:
-            # Z 轴对齐的墙：使用简化的 build_z_wall
+            # Z 轴对齐的墙（左/右墙）— 不延伸，由 X 墙覆盖墙角
             wx_center = x_off + p0[0]
             wz_start  = z_off + min(p0[1], p1[1])
             # 转换开口格式 x→z
@@ -537,13 +644,567 @@ def build_ground_pad(footprint, floor_t, palette, x_off, z_off):
     return make_box([w, 0.05, d], [cx, -floor_t - 0.025, cz], palette["ground"])
 
 
+# ─── 屋顶压顶（沿多边形轮廓顶边） ────────────────────────────────
+
+def build_roof_coping(footprint, height, floor_t, wall_t, palette, x_off, z_off,
+                      eave_overhang: float = 0.0):
+    """
+    沿多边形轮廓各边顶部添加收边压顶（扁平横向box）。
+    eave_overhang: 0~1，屋檐向外挑出的比例（相对于 wall_t，max 1.5m）。
+    """
+    cap_h    = 0.15
+    overhang = eave_overhang * 1.5    # 最大挑出 1.5 m
+    cap_w    = wall_t + 0.05 + overhang
+    y_top    = height + floor_t
+
+    coords = list(footprint.exterior.coords)
+    meshes = []
+
+    for i in range(len(coords) - 1):
+        p0 = coords[i]
+        p1 = coords[i + 1]
+        dx = p1[0] - p0[0]
+        dz = p1[1] - p0[1]
+        edge_len = math.hypot(dx, dz)
+        if edge_len < 1e-4:
+            continue
+
+        mid_x = (p0[0] + p1[0]) / 2
+        mid_z = (p0[1] + p1[1]) / 2
+        angle  = math.atan2(dz, dx)
+
+        m = trimesh.creation.box(extents=[edge_len + 0.02, cap_h, cap_w])
+        m.apply_translation([0, cap_h / 2, 0])
+        rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
+        m.apply_transform(rot)
+        m.apply_translation([_r3(x_off + mid_x), _r3(y_top), _r3(z_off + mid_z)])
+        m.vertices = np.round(m.vertices, 3)
+
+        c = np.array(palette["wall"], dtype=np.uint8)
+        m.visual.face_colors = np.tile(c, (len(m.faces), 1))
+        meshes.append(m)
+
+    return meshes
+
+
+# ─── 平顶 (flat roof, roof_type=0) ───────────────────────────
+
+def build_flat_roof(footprint, height, floor_t, palette, x_off, z_off):
+    """
+    用轮廓多边形生成平顶屋顶平板（适用于矩形/L形/U形）。
+    底面紧贴墙体顶部（Y = height + floor_t），向上延伸 roof_t。
+    颜色使用外墙色，确保从外部可见。
+    """
+    roof_t   = max(floor_t * 1.3, 0.25)     # 足够厚以可见
+    # 屋顶颜色 = 墙色 × 0.7（稍暗于墙体）
+    wc = palette["wall"]
+    roof_color = [int(wc[0] * 0.7), int(wc[1] * 0.7), int(wc[2] * 0.7), wc[3]]
+    roof_mesh = make_extruded_polygon(footprint, roof_t, roof_color)
+    # make_extruded_polygon 旋转后：顶面 Y=0，底面 Y=-roof_t
+    # 平移使底面 = height + floor_t（墙顶面），顶面 = height + floor_t + roof_t
+    roof_mesh.apply_translation([x_off, height + floor_t + roof_t, z_off])
+    return [roof_mesh]
+
+
+# ─── 坡屋顶 (gabled roof, roof_type=1) ───────────────────────
+
+def build_gabled_roof(footprint, height, floor_t, roof_pitch, palette, x_off, z_off):
+    """
+    生成山墙式坡屋顶：两个斜面板沿 Z 中轴脊线交汇。
+    roof_pitch: 0~1，控制屋脊高度比例
+    """
+    bounds   = footprint.bounds             # (minx, minz, maxx, maxz)
+    w        = bounds[2] - bounds[0]
+    d        = bounds[3] - bounds[1]
+    y_base   = height + floor_t + 0.15     # 0.10 = coping cap_h, roof starts above coping top
+    ridge_h  = max(1.0, roof_pitch * d * 0.8)
+    panel_t  = 0.20
+    half_d   = d / 2
+    panel_len = math.hypot(half_d, ridge_h) + 0.15
+    tilt     = math.atan2(ridge_h, half_d)
+
+    mid_x  = x_off + (bounds[0] + bounds[2]) / 2
+    z_mid  = (bounds[1] + bounds[3]) / 2
+    # 屋顶颜色 = 墙色 × 0.7
+    wc = palette["wall"]
+    color  = np.array([int(wc[0]*0.7), int(wc[1]*0.7), int(wc[2]*0.7), wc[3]], dtype=np.uint8)
+    meshes = []
+
+    for sign, cz_local in [(-1, bounds[1] + half_d / 2),
+                             ( 1, bounds[3] - half_d / 2)]:
+        m = trimesh.creation.box(extents=[w, panel_t, panel_len])
+        rot = trimesh.transformations.rotation_matrix(sign * tilt, [1, 0, 0])
+        m.apply_transform(rot)
+        m.apply_translation([mid_x, y_base + ridge_h / 2, z_off + cz_local])
+        m.visual.face_colors = np.tile(color, (len(m.faces), 1))
+        meshes.append(m)
+
+    # ── 山墙封口（左右两端三角形） ──────────────────────────────
+    z_front = z_off + bounds[1]
+    z_back  = z_off + bounds[3]
+    z_peak  = z_off + z_mid
+    for x_local, face_order in [(bounds[0], [0, 1, 2]), (bounds[2], [0, 2, 1])]:
+        x_w = x_off + x_local
+        verts = np.array([
+            [x_w, y_base,           z_front],   # 0: 前下
+            [x_w, y_base,           z_back ],   # 1: 后下
+            [x_w, y_base + ridge_h, z_peak ],   # 2: 峰顶
+        ], dtype=float)
+        # 双面：正面+背面，保证从两侧都可见
+        faces = np.array([face_order, face_order[::-1]])
+        tri = trimesh.Trimesh(vertices=verts, faces=faces, process=False)
+        tri.visual.face_colors = np.tile(color, (len(tri.faces), 1))
+        meshes.append(tri)
+
+    return meshes
+
+
+# ─── 城垛 (battlements) ───────────────────────────────────────
+
+def build_battlements(footprint, height, floor_t, wall_t, palette, x_off, z_off):
+    """
+    沿多边形轮廓顶部等距摆放雉堞（merlon）。
+    """
+    merlon_h = 0.55
+    merlon_w = 0.55
+    gap_w    = 0.50
+    period   = merlon_w + gap_w
+    y_base   = height + floor_t
+    color    = np.array(palette["wall"], dtype=np.uint8)
+
+    coords = list(footprint.exterior.coords)
+    meshes = []
+
+    for i in range(len(coords) - 1):
+        p0, p1 = coords[i], coords[i + 1]
+        dx = p1[0] - p0[0]
+        dz = p1[1] - p0[1]
+        edge_len = math.hypot(dx, dz)
+        if edge_len < period:
+            continue
+
+        ux, uz = dx / edge_len, dz / edge_len
+        angle  = math.atan2(dz, dx)
+        n_merlons  = max(1, int(edge_len / period))
+        total_span = n_merlons * period - gap_w
+        start_pos  = (edge_len - total_span) / 2 + merlon_w / 2
+
+        for k in range(n_merlons):
+            pos = start_pos + k * period
+            if pos + merlon_w / 2 > edge_len:
+                break
+            cx_world = x_off + p0[0] + ux * pos
+            cz_world = z_off + p0[1] + uz * pos
+
+            m = trimesh.creation.box(extents=[merlon_w, merlon_h, wall_t + 0.12])
+            m.apply_translation([0, merlon_h / 2, 0])
+            rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
+            m.apply_transform(rot)
+            m.apply_translation([cx_world, y_base, cz_world])
+            m.visual.face_colors = np.tile(color, (len(m.faces), 1))
+            meshes.append(m)
+
+    return meshes
+
+
+# ─── 拱门 / 尖拱窗 装饰线脚 ──────────────────────────────────
+
+def build_arch_trims(footprint, height, wall_t, params, palette, x_off, z_off,
+                     has_arch: bool, window_shape: int):
+    """
+    在门洞（has_arch）和窗洞（window_shape==1 尖拱）上方添加 box 近似线脚。
+    """
+    if not has_arch and window_shape != 1:
+        return []
+
+    door_w  = float(params["door_spec"]["width"])
+    door_h  = min(float(params["door_spec"]["height"]), height - 0.15)
+    win_w   = float(params["win_spec"]["width"])
+    win_h   = float(params["win_spec"]["height"])
+    win_d   = float(params["win_spec"]["density"])
+    subdiv  = int(params["subdivision"])
+
+    coords = list(footprint.exterior.coords)
+    meshes = []
+    door_placed = False
+    trim_color  = np.array(palette["wall"], dtype=np.uint8)
+
+    for i in range(len(coords) - 1):
+        p0, p1 = coords[i], coords[i + 1]
+        dx = p1[0] - p0[0]
+        dz = p1[1] - p0[1]
+        edge_len = math.hypot(dx, dz)
+        if edge_len < 1e-4:
+            continue
+
+        ux, uz  = dx / edge_len, dz / edge_len
+        angle   = math.atan2(dz, dx)
+        edge_type, _ = _classify_edge(p0, p1)
+        is_front = (edge_type == "front") and not door_placed
+
+        if is_front and edge_len >= door_w + 0.5:
+            door_placed = True
+            if has_arch:
+                arch_h    = door_w * 0.45
+                door_x    = (edge_len - door_w) / 2
+                mid_along = door_x + door_w / 2
+                cx = x_off + p0[0] + ux * mid_along
+                cz = z_off + p0[1] + uz * mid_along
+                m  = trimesh.creation.box(extents=[door_w * 0.88, arch_h, wall_t + 0.03])
+                m.apply_translation([0, door_h + arch_h / 2, 0])
+                rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
+                m.apply_transform(rot)
+                m.apply_translation([cx, 0, cz])
+                m.visual.face_colors = np.tile(trim_color, (len(m.faces), 1))
+                meshes.append(m)
+            continue  # 前墙已处理（门），跳过窗户线脚避免叠加到门上
+
+        if window_shape == 1:
+            wins = place_windows_edge(edge_len, height, win_w, win_h, win_d, subdiv)
+            for op in wins:
+                arch_h    = op["w"] * 0.42
+                mid_along = op["x"] + op["w"] / 2
+                cx = x_off + p0[0] + ux * mid_along
+                cz = z_off + p0[1] + uz * mid_along
+                m  = trimesh.creation.box(extents=[op["w"] * 0.82, arch_h, wall_t + 0.03])
+                m.apply_translation([0, op["y"] + op["h"] + arch_h / 2, 0])
+                rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
+                m.apply_transform(rot)
+                m.apply_translation([cx, 0, cz])
+                m.visual.face_colors = np.tile(trim_color, (len(m.faces), 1))
+                meshes.append(m)
+
+    return meshes
+
+
+# ─── 四坡屋顶 (hip roof, roof_type=2) ──────────────────────────
+
+def build_hip_roof(footprint, height, floor_t, roof_pitch, palette, x_off, z_off):
+    """
+    四坡歇山屋顶：4 个真实三角/梯形面板精确收拢到中脊线。
+    使用顶点+面索引构造，完全避免 box 穿插问题。
+
+    顶点命名（世界坐标，y_base 高度）:
+      A=前左  B=前右  C=后右  D=后左
+      E=脊左  F=脊右  (若 w==d 则 E==F 为单点)
+
+    w >= d 时脊沿 X 轴; w < d 时脊沿 Z 轴。
+    法线通过 CCW 绕序保证朝外。
+    """
+    bounds  = footprint.bounds
+    x0, z0, x1, z1 = bounds
+    w      = x1 - x0
+    d      = z1 - z0
+    y_base = height + floor_t + 0.15
+    ridge_h = max(0.4, roof_pitch * min(w, d) * 0.4)
+
+    # 世界坐标角点（屋顶底边，y = y_base）
+    A = np.array([x_off + x0, y_base, z_off + z0])
+    B = np.array([x_off + x1, y_base, z_off + z0])
+    C = np.array([x_off + x1, y_base, z_off + z1])
+    D = np.array([x_off + x0, y_base, z_off + z1])
+    ry = y_base + ridge_h
+    # 屋顶颜色 = 墙色 × 0.7
+    wc = palette["wall"]
+    color = np.array([int(wc[0]*0.7), int(wc[1]*0.7), int(wc[2]*0.7), wc[3]], dtype=np.uint8)
+
+    if w >= d:
+        # 脊沿 X 轴
+        mid_z = z_off + (z0 + z1) / 2
+        half  = d / 2
+        E = np.array([x_off + x0 + half, ry, mid_z])
+        F = np.array([x_off + x1 - half, ry, mid_z])
+        # 若 w==d，E/F 重合成单点（金字塔）
+
+        # 面板定义: [(顶点列表, 三角形索引列表)]
+        # 法线方向已通过 CCW 绕序验证（朝外 + 朝上）
+        panels = [
+            # 前坡 (法线 -Z, +Y): A F B + A E F
+            ([A, F, B, E], [(0,1,2), (0,3,1)]),
+            # 后坡 (法线 +Z, +Y): D C F + D F E
+            ([D, C, F, E], [(0,1,2), (0,2,3)]),
+            # 左三角坡 (法线 -X, +Y): A D E
+            ([A, D, E],    [(0,1,2)]),
+            # 右三角坡 (法线 +X, +Y): B F C
+            ([B, F, C],    [(0,1,2)]),
+        ]
+    else:
+        # 脊沿 Z 轴
+        mid_x = x_off + (x0 + x1) / 2
+        half  = w / 2
+        E = np.array([mid_x, ry, z_off + z0 + half])
+        F = np.array([mid_x, ry, z_off + z1 - half])
+
+        panels = [
+            # 左坡 (法线 -X, +Y): A D F + A F E
+            ([A, D, F, E], [(0,1,2), (0,2,3)]),
+            # 右坡 (法线 +X, +Y): B F C + B E F
+            ([B, F, C, E], [(0,1,2), (0,3,1)]),
+            # 前三角坡 (法线 -Z, +Y): A E B
+            ([A, E, B],    [(0,1,2)]),
+            # 后三角坡 (法线 +Z, +Y): D C F
+            ([D, C, F],    [(0,1,2)]),
+        ]
+
+    meshes = []
+    for verts, faces in panels:
+        v = np.array(verts, dtype=float)
+        f = np.array(faces,  dtype=int)
+        m = trimesh.Trimesh(vertices=v, faces=f, process=False)
+        m.visual.face_colors = np.tile(color, (len(m.faces), 1))
+        meshes.append(m)
+    return meshes
+
+
+# ─── 东亚翘角屋顶 (pagoda/curved eave, roof_type=3) ─────────────
+
+def build_pagoda_roof(footprint, height, floor_t, roof_pitch, palette, x_off, z_off):
+    """
+    东亚翘角坡屋顶：在山墙坡顶基础上，四角添加向上翘起的角飞檐。
+    """
+    meshes = build_gabled_roof(footprint, height, floor_t, roof_pitch, palette, x_off, z_off)
+
+    bounds  = footprint.bounds
+    w       = bounds[2] - bounds[0]
+    d       = bounds[3] - bounds[1]
+    y_base  = height + floor_t + 0.15
+    ridge_h = max(0.4, roof_pitch * d * 0.45)
+    # 屋顶颜色 = 墙色 × 0.7
+    wc = palette["wall"]
+    color   = np.array([int(wc[0]*0.7), int(wc[1]*0.7), int(wc[2]*0.7), wc[3]], dtype=np.uint8)
+
+    # 四角翘檐：各角一个细长翘板，内端埋入屋面，外端上翘飞出
+    eave_l     = min(w, d) * 0.15          # 翘檐长度 = 短边15%
+    tilt       = math.radians(20)          # 上翘角度 ~20°（写实翘檐）
+    eave_thick = max(floor_t, 0.12)        # 厚度与屋顶楼板一致
+    eave_rise  = eave_l * 0.5 * math.sin(tilt)  # 内端→中心的高度差
+    corners = [
+        (bounds[0], bounds[1], -1, -1),
+        (bounds[2], bounds[1],  1, -1),
+        (bounds[2], bounds[3],  1,  1),
+        (bounds[0], bounds[3], -1,  1),
+    ]
+    for cx_local, cz_local, sx, sz in corners:
+        m = trimesh.creation.box(extents=[eave_l, eave_thick, eave_l * 0.55])
+        # 先绕Z轴倾斜（+X端上翘），再绕Y轴旋转至正确对角方向
+        rot_tilt = trimesh.transformations.rotation_matrix(tilt, [0, 0, 1])
+        rot_yaw  = trimesh.transformations.rotation_matrix(
+            math.atan2(-sz, sx), [0, 1, 0])
+        m.apply_transform(rot_tilt)
+        m.apply_transform(rot_yaw)
+        # 中心置于墙角，内端自然嵌入屋面，外端飞出；Y偏移使内端与屋面齐平
+        m.apply_translation([x_off + cx_local, y_base + eave_rise,
+                              z_off + cz_local])
+        m.visual.face_colors = np.tile(color, (len(m.faces), 1))
+        meshes.append(m)
+
+    return meshes
+
+
+# ─── 四角炮楼顶 (corner turrets, roof_type=4) ──────────────────
+
+def build_turret_roof(footprint, height, floor_t, wall_t, palette, x_off, z_off):
+    """
+    四角炮楼：在建筑四角各放一个小型方塔，带尖顶。
+    """
+    bounds   = footprint.bounds
+    y_base   = height + floor_t + 0.15
+    tower_w  = max(wall_t * 2.5, min(1.6, (bounds[2] - bounds[0]) * 0.18))
+    tower_h  = max(1.2, (bounds[1 + 2] - bounds[1]) * 0.22)  # 约 22% 建筑高
+    spire_h  = tower_w * 0.8
+    color_w  = np.array(palette["wall"],    dtype=np.uint8)
+    # 屋顶颜色 = 墙色 × 0.7
+    wc = palette["wall"]
+    color_r  = np.array([int(wc[0]*0.7), int(wc[1]*0.7), int(wc[2]*0.7), wc[3]], dtype=np.uint8)
+    meshes   = []
+
+    corners = [
+        (bounds[0], bounds[1]),
+        (bounds[2], bounds[1]),
+        (bounds[2], bounds[3]),
+        (bounds[0], bounds[3]),
+    ]
+    for cx_local, cz_local in corners:
+        # 塔身
+        cx = x_off + cx_local
+        cz = z_off + cz_local
+        body = trimesh.creation.box(extents=[tower_w, tower_h, tower_w])
+        body.apply_translation([cx, y_base + tower_h / 2, cz])
+        body.visual.face_colors = np.tile(color_w, (len(body.faces), 1))
+        meshes.append(body)
+
+        # 尖顶（用细高 box 近似四棱锥）
+        spire = trimesh.creation.box(extents=[tower_w * 0.55, spire_h, tower_w * 0.55])
+        spire.apply_translation([cx, y_base + tower_h + spire_h / 2, cz])
+        spire.visual.face_colors = np.tile(color_r, (len(spire.faces), 1))
+        meshes.append(spire)
+
+    return meshes
+
+
+# ─── 柱子 (columns) ─────────────────────────────────────────────
+
+def build_columns(footprint, height, wall_t, column_count: int, palette,
+                  x_off, z_off):
+    """
+    沿建筑前立面（最长边）等距放置 column_count 根方柱。
+    柱截面 = wall_t × wall_t，高度 = 建筑高度，贴着外墙外表面。
+    """
+    if column_count <= 0:
+        return []
+
+    coords     = list(footprint.exterior.coords)
+    color      = np.array(palette["wall"], dtype=np.uint8)
+    # 加深 15% 使柱子有区分感
+    col_rgb    = np.clip(color[:3].astype(int) - 30, 0, 255)
+    col_color  = np.array([*col_rgb, 255], dtype=np.uint8)
+    meshes     = []
+
+    # 找最长边作为立柱面
+    best_edge  = None
+    best_len   = 0.0
+    for i in range(len(coords) - 1):
+        p0, p1 = coords[i], coords[i + 1]
+        elen = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+        if elen > best_len:
+            best_len   = elen
+            best_edge  = (p0, p1)
+
+    if best_edge is None:
+        return []
+
+    p0, p1   = best_edge
+    dx       = p1[0] - p0[0]
+    dz       = p1[1] - p0[1]
+    ux, uz   = dx / best_len, dz / best_len
+    angle    = math.atan2(dz, dx)
+    col_d    = wall_t          # 柱深（法线方向）
+    col_w    = wall_t * 0.9    # 柱宽（沿边方向）
+
+    # n 根柱子均匀排列
+    n = max(2, column_count)
+    for k in range(n):
+        t = (k + 0.5) / n   # 0.5/n … (n-0.5)/n
+        pos = t * best_len
+        cx  = x_off + p0[0] + ux * pos
+        cz  = z_off + p0[1] + uz * pos
+
+        col = trimesh.creation.box(extents=[col_w, height, col_d])
+        col.apply_translation([0, height / 2, 0])
+        rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
+        col.apply_transform(rot)
+        col.apply_translation([cx, 0, cz])
+        col.visual.face_colors = np.tile(col_color, (len(col.faces), 1))
+        meshes.append(col)
+
+    return meshes
+
+
+# ─── 窗户形状装饰 (window_shape = 2 / 3 / 4) ──────────────────
+
+def build_window_shape_trims(footprint, height, wall_t, params, palette,
+                              x_off, z_off, window_shape: int):
+    """
+    window_shape:
+      2 = 十字形: 在窗洞处叠加横向压条（玫瑰窗十字格）
+      3 = 箭缝/射孔: 在窗洞两侧加竖向侧石柱，窗变细
+      4 = 圆拱顶: 在窗洞上方加半圆弧顶盒（宽于尖拱，更饱满）
+    """
+    if window_shape not in (2, 3, 4):
+        return []
+
+    win_w  = float(params["win_spec"]["width"])
+    win_h  = float(params["win_spec"]["height"])
+    win_d  = float(params["win_spec"]["density"])
+    door_w = float(params["door_spec"]["width"])
+    subdiv = int(params["subdivision"])
+
+    coords      = list(footprint.exterior.coords)
+    trim_c      = np.array(palette["wall"], dtype=np.uint8)
+    meshes      = []
+    door_placed = False
+
+    for i in range(len(coords) - 1):
+        p0, p1  = coords[i], coords[i + 1]
+        dx, dz  = p1[0] - p0[0], p1[1] - p0[1]
+        edge_len = math.hypot(dx, dz)
+        if edge_len < 1e-4:
+            continue
+        ux, uz     = dx / edge_len, dz / edge_len
+        angle      = math.atan2(dz, dx)
+        edge_type, _ = _classify_edge(p0, p1)
+        is_front   = (edge_type == "front") and not door_placed
+
+        wins = place_windows_edge(edge_len, height, win_w, win_h, win_d, subdiv)
+
+        if is_front and edge_len >= door_w + 0.5:
+            door_placed = True
+            # 门居中放置：过滤掉与门洞重叠的窗户，只对真正的窗户加装饰
+            door_x   = (edge_len - door_w) / 2
+            door_mid = door_x + door_w / 2
+            wins = [op for op in wins
+                    if abs(op["x"] + op["w"] / 2 - door_mid) > (door_w / 2 + op["w"] / 2)]
+
+        for op in wins:
+            mid_along = op["x"] + op["w"] / 2
+            cx = x_off + p0[0] + ux * mid_along
+            cz = z_off + p0[1] + uz * mid_along
+            wy = op["y"]
+            wh = op["h"]
+            ww = op["w"]
+
+            # 线脚统一参数：凸出最多 3cm，宽度 5cm
+            trim_depth = wall_t + 0.03   # 比墙厚多 3cm（每侧凸出 1.5cm）
+            trim_w     = 0.05            # 线脚宽度 5cm
+
+            if window_shape == 2:
+                # 十字：一根水平压条
+                bar_h = max(trim_w, wh * 0.06)
+                bar   = trimesh.creation.box(extents=[ww * 0.85, bar_h, trim_depth])
+                bar.apply_translation([0, wy + wh * 0.55, 0])
+                rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
+                bar.apply_transform(rot)
+                bar.apply_translation([cx, 0, cz])
+                bar.visual.face_colors = np.tile(trim_c, (len(bar.faces), 1))
+                meshes.append(bar)
+
+            elif window_shape == 3:
+                # 箭缝：两侧各一根竖向侧石柱
+                for sx in (-1, 1):
+                    off_along = mid_along + sx * (ww * 0.5 + trim_w * 0.5)
+                    jcx = x_off + p0[0] + ux * off_along
+                    jcz = z_off + p0[1] + uz * off_along
+                    jamb = trimesh.creation.box(extents=[trim_w, wh * 1.05, trim_depth])
+                    jamb.apply_translation([0, wy + wh / 2, 0])
+                    rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
+                    jamb.apply_transform(rot)
+                    jamb.apply_translation([jcx, 0, jcz])
+                    jamb.visual.face_colors = np.tile(trim_c, (len(jamb.faces), 1))
+                    meshes.append(jamb)
+
+            elif window_shape == 4:
+                # 圆拱顶
+                arch_h = ww * 0.55
+                arch   = trimesh.creation.box(extents=[ww * 0.92, arch_h, trim_depth])
+                arch.apply_translation([0, wy + wh + arch_h * 0.45, 0])
+                rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
+                arch.apply_transform(rot)
+                arch.apply_translation([cx, 0, cz])
+                arch.visual.face_colors = np.tile(trim_c, (len(arch.faces), 1))
+                meshes.append(arch)
+
+    return meshes
+
+
 # ─── 单间房间（多边形轮廓版） ────────────────────────────────────
 
-def build_room(params, palette, x_off=0.0, z_off=0.0, footprint=None):
+def build_room(params, palette, x_off=0.0, z_off=0.0, footprint=None,
+               generate_interior: bool = False):
     """
     生成单间房间的所有 mesh。
     footprint: shapely Polygon（局部坐标，原点在房间左前角），
                None 时默认使用 ROOM_W × ROOM_D 矩形（向后兼容）。
+    generate_interior: True 时生成内部分隔墙，False（默认）时只生成外壳。
     """
     if footprint is None:
         footprint = make_rect_footprint()
@@ -551,12 +1212,49 @@ def build_room(params, palette, x_off=0.0, z_off=0.0, footprint=None):
     height   = float(params["height_range"][1])
     wall_t   = float(params["wall_thickness"])
     floor_t  = float(params["floor_thickness"])
-    door_w   = float(params["door_spec"]["width"])
-    door_h   = min(float(params["door_spec"]["height"]), height - 0.15)
-    win_w    = float(params["win_spec"]["width"])
-    win_h    = float(params["win_spec"]["height"])
-    win_d    = float(params["win_spec"]["density"])
     subdiv   = int(params["subdivision"])
+
+    # ── 读取新增视觉参数（兼容旧 params 不含这些字段） ──────────
+    roof_type       = int(params.get("roof_type", 0))
+    roof_pitch      = float(params.get("roof_pitch", 0.3))
+    has_battlements = bool(int(params.get("has_battlements", 0)))
+    has_arch        = bool(int(params.get("has_arch", 0)))
+    window_shape    = int(params.get("window_shape", 0))
+    eave_overhang   = float(params.get("eave_overhang", 0.0))
+    column_count    = int(params.get("column_count", 0))
+    wall_color      = params.get("wall_color")   # [r,g,b] in 0-1 or None
+
+    # ── 几何复杂度参数（来自 w3_mesh_features） ──────────────
+    mesh_complexity = float(params.get("mesh_complexity", 0.3))
+    detail_density  = float(params.get("detail_density", 0.5))
+    simple_ratio    = float(params.get("simple_ratio", 0.4))
+
+    # mesh_complexity > 0.7 → 增加装饰细节（更多拱门线脚、柱子）
+    if mesh_complexity > 0.7:
+        if column_count < 2:
+            column_count = 2
+        has_arch = True
+
+    # detail_density > 0.6 → 增密窗户/门
+    if detail_density > 0.6 and "win_spec" in params:
+        old_d = params["win_spec"].get("density", 0.3)
+        boost = (detail_density - 0.6) * 0.5  # max +0.2 boost
+        params = {**params, "win_spec": {**params["win_spec"],
+                  "density": min(0.95, old_d + boost)}}
+
+    # simple_ratio > 0.6 → 简化几何（去除城垛、减少柱子、强制平顶）
+    if simple_ratio > 0.6:
+        has_battlements = False
+        column_count = min(column_count, 2)
+        if simple_ratio > 0.75:
+            roof_type = 0  # 强制平顶
+
+    # ── 墙色覆盖（如果 params 提供 wall_color） ──────────────
+    if wall_color is not None:
+        r = int(min(255, max(0, wall_color[0] * 255)))
+        g = int(min(255, max(0, wall_color[1] * 255)))
+        b = int(min(255, max(0, wall_color[2] * 255)))
+        palette = {**palette, "wall": [r, g, b, 255]}
 
     meshes = []
 
@@ -579,8 +1277,55 @@ def build_room(params, palette, x_off=0.0, z_off=0.0, footprint=None):
     wall_meshes = build_polygon_walls(footprint, height, wall_t, params, palette, x_off, z_off)
     meshes.extend(wall_meshes)
 
+    # ── 屋顶压顶（含屋檐挑出） ────────────────────────────────
+    coping_meshes = build_roof_coping(footprint, height, floor_t, wall_t, palette,
+                                      x_off, z_off, eave_overhang=eave_overhang)
+    meshes.extend(coping_meshes)
+
+    # ── 屋顶形态 ────────────────────────────────────────────
+    # L形/U形轮廓强制使用平顶（坡顶/尖顶算法仅适用于矩形平面）
+    _b = footprint.bounds
+    _bbox_area = (_b[2] - _b[0]) * (_b[3] - _b[1])
+    _is_rect   = abs(footprint.area - _bbox_area) < 1e-2 * _bbox_area
+    effective_roof_type = roof_type if _is_rect else 0
+
+    if effective_roof_type == 0:
+        meshes.extend(build_flat_roof(
+            footprint, height, floor_t, palette, x_off, z_off))
+    elif effective_roof_type == 1:
+        meshes.extend(build_gabled_roof(
+            footprint, height, floor_t, roof_pitch, palette, x_off, z_off))
+    elif effective_roof_type == 2:
+        meshes.extend(build_hip_roof(
+            footprint, height, floor_t, roof_pitch, palette, x_off, z_off))
+    elif effective_roof_type == 3:
+        meshes.extend(build_pagoda_roof(
+            footprint, height, floor_t, roof_pitch, palette, x_off, z_off))
+    elif effective_roof_type == 4:
+        meshes.extend(build_turret_roof(
+            footprint, height, floor_t, wall_t, palette, x_off, z_off))
+
+    # ── 城垛 ─────────────────────────────────────────────────
+    if has_battlements:
+        meshes.extend(build_battlements(
+            footprint, height, floor_t, wall_t, palette, x_off, z_off))
+
+    # ── 拱门 / 尖拱窗 线脚 ──────────────────────────────────
+    meshes.extend(build_arch_trims(
+        footprint, height, wall_t, params, palette, x_off, z_off,
+        has_arch, window_shape))
+
+    # ── 额外窗户形状装饰（shape 2/3/4） ─────────────────────
+    meshes.extend(build_window_shape_trims(
+        footprint, height, wall_t, params, palette, x_off, z_off, window_shape))
+
+    # ── 柱子 ──────────────────────────────────────────────────
+    if column_count > 0:
+        meshes.extend(build_columns(
+            footprint, height, wall_t, column_count, palette, x_off, z_off))
+
     # ── 内部分隔墙（沿 Z 均分，各有一扇门） ─────────────────
-    if subdiv > 1:
+    if generate_interior and subdiv > 1:
         bounds = footprint.bounds
         fp_w = bounds[2] - bounds[0]
         fp_d = bounds[3] - bounds[1]
@@ -594,35 +1339,58 @@ def build_room(params, palette, x_off=0.0, z_off=0.0, footprint=None):
             wz_local = bounds[1] + k * z_step
             wz_world = z_off + wz_local
 
-            # 求分隔墙与轮廓在该 z 位置的交叉范围
-            cut_line = footprint.intersection(
-                shapely_box(bounds[0] - 1, wz_local - 0.01, bounds[2] + 1, wz_local + 0.01)
-            )
-            if cut_line.is_empty:
-                int_w   = fp_w
-                x_start = x_off + bounds[0]
-            else:
-                cb      = cut_line.bounds
-                int_w   = cb[2] - cb[0]
-                x_start = x_off + cb[0]
-            if int_w < int_door_w + 0.3:
+            # 用水平线与轮廓求交，精确得到该 z 处的各连续墙段
+            h_line = LineString([
+                (bounds[0] - 1, wz_local),
+                (bounds[2] + 1, wz_local),
+            ])
+            intersection = footprint.intersection(h_line)
+
+            if intersection.is_empty:
                 continue
 
-            int_door_x = (int_w - int_door_w) / 2
-            int_ops = [{"x": int_door_x, "w": int_door_w, "y": 0.0, "h": int_door_h}]
-            meshes += build_x_wall(int_w, height, int_wall_t, int_ops, palette["internal"], x_start, wz_world)
-            add_door_frame(int_door_x, int_door_w, int_door_h, int_wall_t, x_start, wz_world, palette, meshes)
+            # 拆解为独立线段（MultiLineString → 列表；单段直接用）
+            if hasattr(intersection, "geoms"):
+                segs = [g for g in intersection.geoms
+                        if g.geom_type in ("LineString", "MultiLineString")]
+            elif intersection.geom_type == "LineString":
+                segs = [intersection]
+            else:
+                continue  # Point / GeometryCollection 等退化情形
+
+            for seg in segs:
+                xs = [c[0] for c in seg.coords]
+                x0, x1 = min(xs), max(xs)
+                seg_w = x1 - x0
+                if seg_w < int_door_w + 0.3:
+                    continue
+
+                x_start    = x_off + x0
+                int_door_x = (seg_w - int_door_w) / 2
+                int_ops    = [{"x": int_door_x, "w": int_door_w,
+                               "y": 0.0, "h": int_door_h}]
+                meshes += build_x_wall(
+                    seg_w, height, int_wall_t, int_ops,
+                    palette["internal"], x_start, wz_world)
+                add_door_frame(
+                    int_door_x, int_door_w, int_door_h,
+                    int_wall_t, x_start, wz_world, palette, meshes)
+                add_door_panel(
+                    int_door_x, int_door_w, int_door_h,
+                    int_wall_t, x_start, wz_world, palette, meshes)
 
     return meshes
 
 
 # ─── 场景构建 ─────────────────────────────────────────────────
 
-def build_scene(style_params_map, use_style_palette=True, footprints=None):
+def build_scene(style_params_map, use_style_palette=True, footprints=None,
+                generate_interior: bool = False):
     """
     生成包含多个并排房间的 trimesh.Scene。
     style_params_map: {"medieval": params, "modern": params, ...}
     footprints: dict style→shapely Polygon，None 时使用默认矩形
+    generate_interior: 传递给 build_room，控制是否生成内部分隔墙
     """
     scene = trimesh.Scene()
     x_off = 0.0
@@ -641,7 +1409,8 @@ def build_scene(style_params_map, use_style_palette=True, footprints=None):
         else:
             room_w = ROOM_W
 
-        room = build_room(params, palette, x_off, 0.0, footprint=footprint)
+        room = build_room(params, palette, x_off, 0.0, footprint=footprint,
+                          generate_interior=generate_interior)
         for i, mesh in enumerate(room):
             scene.add_geometry(mesh, node_name=f"{style}_{i:03d}")
         x_off += room_w + GAP
@@ -768,6 +1537,14 @@ def main():
     u_scene.export(str(u_path))
     print(f"  => {u_path}  ({sum(len(g.faces) for g in u_scene.geometry.values()):,} 面)")
 
+    # ── 生成 medieval_test.glb（含新视觉特征） ───────────────
+    if "medieval" in trained_map:
+        print("\n生成 medieval_test.glb（medieval，矩形轮廓，完整视觉特征）...")
+        med_scene = build_scene({"medieval": trained_map["medieval"]}, use_style_palette=True)
+        med_path  = script_dir / "medieval_test.glb"
+        med_scene.export(str(med_path))
+        print(f"  => {med_path}  ({sum(len(g.faces) for g in med_scene.geometry.values()):,} 面)")
+
     # ── 输出对比报告 ──────────────────────────────────────────
     print_comparison(trained_map)
     export_report(trained_map, script_dir / "comparison_report.json")
@@ -777,6 +1554,8 @@ def main():
     print(f"  baseline.glb     — 矩形轮廓，默认参数")
     print(f"  l_shape_test.glb — L形轮廓，medieval + modern")
     print(f"  u_shape_test.glb — U形轮廓，medieval + modern")
+    if "medieval" in trained_map:
+        print(f"  medieval_test.glb — medieval，完整视觉特征")
 
 
 if __name__ == "__main__":
