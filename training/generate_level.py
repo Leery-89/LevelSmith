@@ -233,6 +233,34 @@ def build_x_wall(total_w, height, thickness, openings, color, wx, wz):
     return [_boolean_wall(solid, holes, color)]
 
 
+def _x_wall_reveals(openings, thickness, wall_color, wx, wz, wall_height):
+    """Generate inner wall face panels for X-wall openings.
+    Uses wall_color (not opening color) so reveals get classified as 'wall'."""
+    reveal_t = 0.02
+    meshes = []
+    for op in openings:
+        y0 = max(0.0, op.get("y", 0.0))
+        h  = min(op.get("h", wall_height), wall_height - y0)
+        w  = op.get("w", 1.0)
+        x  = op.get("x", 0.0)
+        ox = wx + x
+        cy = y0 + h / 2
+        meshes.append(make_box(
+            [reveal_t, h, thickness],
+            [ox + reveal_t / 2, cy, wz], wall_color))
+        meshes.append(make_box(
+            [reveal_t, h, thickness],
+            [ox + w - reveal_t / 2, cy, wz], wall_color))
+        meshes.append(make_box(
+            [w, reveal_t, thickness],
+            [ox + w / 2, y0 + h - reveal_t / 2, wz], wall_color))
+        if y0 > 0.1:
+            meshes.append(make_box(
+                [w, reveal_t, thickness],
+                [ox + w / 2, y0 + reveal_t / 2, wz], wall_color))
+    return meshes
+
+
 def build_z_wall(total_d, height, thickness, openings_z, color, wx, wz):
     """
     沿 Z 方向的墙体（左/右墙）。
@@ -257,6 +285,34 @@ def build_z_wall(total_d, height, thickness, openings_z, color, wx, wz):
         return [solid]
 
     return [_boolean_wall(solid, holes, color)]
+
+
+def _z_wall_reveals(openings_z, thickness, wall_color, wx, wz, wall_height):
+    """Generate inner wall face panels for Z-wall openings.
+    Uses wall_color so reveals get classified as 'wall'."""
+    reveal_t = 0.02
+    meshes = []
+    for op in openings_z:
+        y0 = max(0.0, op.get("y", 0.0))
+        h  = min(op.get("h", wall_height), wall_height - y0)
+        w  = op.get("w", 1.0)
+        z  = op.get("z", 0.0)
+        oz = wz + z
+        cy = y0 + h / 2
+        meshes.append(make_box(
+            [thickness, h, reveal_t],
+            [wx, cy, oz + reveal_t / 2], wall_color))
+        meshes.append(make_box(
+            [thickness, h, reveal_t],
+            [wx, cy, oz + w - reveal_t / 2], wall_color))
+        meshes.append(make_box(
+            [thickness, reveal_t, w],
+            [wx, y0 + h - reveal_t / 2, oz + w / 2], wall_color))
+        if y0 > 0.1:
+            meshes.append(make_box(
+                [thickness, reveal_t, w],
+                [wx, y0 + reveal_t / 2, oz + w / 2], wall_color))
+    return meshes
 
 
 def build_edge_wall(p0, p1, height, wall_t, openings, color, x_off, z_off):
@@ -440,12 +496,12 @@ def add_glass_z(openings, wx, wz_base, palette, meshes, wall_t=0.3):
 # ─── 门框 ─────────────────────────────────────────────────────
 
 def add_door_frame(door_x, door_w, door_h, wall_t, wx, wz, palette, meshes):
-    """添加门框（三条边框），用于 X 方向墙体"""
-    f = 0.07
+    """门框：只保留顶部横梁，不加竖向侧柱（避免产生竖向阴影条）。"""
+    f = 0.05
     cx = wx + door_x + door_w / 2
-    meshes.append(make_box([f, door_h + f, wall_t + 0.04], [wx + door_x,           door_h / 2,  wz], palette["door"]))
-    meshes.append(make_box([f, door_h + f, wall_t + 0.04], [wx + door_x + door_w,  door_h / 2,  wz], palette["door"]))
-    meshes.append(make_box([door_w + f * 2, f, wall_t + 0.04], [cx, door_h + f / 2, wz], palette["door"]))
+    # 只有顶部横梁
+    meshes.append(make_box([door_w + f * 2, f, wall_t + 0.02],
+                           [cx, door_h + f / 2, wz], palette["door"]))
 
 
 def add_door_panel(door_x, door_w, door_h, wall_t, wx, wz, palette, meshes):
@@ -1169,18 +1225,15 @@ def build_window_shape_trims(footprint, height, wall_t, params, palette,
                 meshes.append(bar)
 
             elif window_shape == 3:
-                # 箭缝：两侧各一根竖向侧石柱
-                for sx in (-1, 1):
-                    off_along = mid_along + sx * (ww * 0.5 + trim_w * 0.5)
-                    jcx = x_off + p0[0] + ux * off_along
-                    jcz = z_off + p0[1] + uz * off_along
-                    jamb = trimesh.creation.box(extents=[trim_w, wh * 1.05, trim_depth])
-                    jamb.apply_translation([0, wy + wh / 2, 0])
-                    rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
-                    jamb.apply_transform(rot)
-                    jamb.apply_translation([jcx, 0, jcz])
-                    jamb.visual.face_colors = np.tile(trim_c, (len(jamb.faces), 1))
-                    meshes.append(jamb)
+                # 箭缝：只加窗台横条（不加竖向侧柱，避免竖向阴影）
+                sill_h = max(0.04, wh * 0.05)
+                sill = trimesh.creation.box(extents=[ww * 0.9, sill_h, trim_depth])
+                sill.apply_translation([0, wy - sill_h * 0.5, 0])
+                rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
+                sill.apply_transform(rot)
+                sill.apply_translation([cx, 0, cz])
+                sill.visual.face_colors = np.tile(trim_c, (len(sill.faces), 1))
+                meshes.append(sill)
 
             elif window_shape == 4:
                 # 圆拱顶
@@ -1310,19 +1363,9 @@ def build_room(params, palette, x_off=0.0, z_off=0.0, footprint=None,
         meshes.extend(build_battlements(
             footprint, height, floor_t, wall_t, palette, x_off, z_off))
 
-    # ── 拱门 / 尖拱窗 线脚 ──────────────────────────────────
-    meshes.extend(build_arch_trims(
-        footprint, height, wall_t, params, palette, x_off, z_off,
-        has_arch, window_shape))
-
-    # ── 额外窗户形状装饰（shape 2/3/4） ─────────────────────
-    meshes.extend(build_window_shape_trims(
-        footprint, height, wall_t, params, palette, x_off, z_off, window_shape))
-
-    # ── 柱子 ──────────────────────────────────────────────────
-    if column_count > 0:
-        meshes.extend(build_columns(
-            footprint, height, wall_t, column_count, palette, x_off, z_off))
+    # ── 拱门/线脚/柱子已移除 ──────────────────────────────────
+    # arch_trims, window_shape_trims, columns 凸出墙面产生阴影条，
+    # 暂时禁用。后续可用贴图（法线贴图）替代凸出几何。
 
     # ── 内部分隔墙（沿 Z 均分，各有一扇门） ─────────────────
     if generate_interior and subdiv > 1:

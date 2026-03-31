@@ -981,6 +981,186 @@ def _make_street_lamps(area_w: float, area_d: float,
     return meshes
 
 
+# ─── 连通性保证系统 ────────────────────────────────────────────
+
+def build_adjacency_graph(buildings):
+    """
+    建筑列表 → 邻近图。
+    buildings: [{"x": center_x, "z": center_z, "w": width, "d": depth, "height": h}, ...]
+    坐标系: X=东, Y=上, Z=南 → 水平距离用 XZ 平面。
+    """
+    n = len(buildings)
+    graph = {i: [] for i in range(n)}
+    for i in range(n):
+        for j in range(i + 1, n):
+            a, b = buildings[i], buildings[j]
+            dist = math.hypot(a["x"] - b["x"], a["z"] - b["z"])
+            gap = dist - (a.get("w", 8) / 2 + b.get("w", 8) / 2)
+            if gap < 8.0:
+                graph[i].append(j)
+                graph[j].append(i)
+    return graph
+
+
+def find_components(graph):
+    """BFS 找所有连通分量。"""
+    visited = set()
+    components = []
+    for start in graph:
+        if start in visited:
+            continue
+        comp = set()
+        queue = [start]
+        while queue:
+            node = queue.pop(0)
+            if node in visited:
+                continue
+            visited.add(node)
+            comp.add(node)
+            queue.extend(graph[node])
+        components.append(comp)
+    return components
+
+
+def connect_components_mst(buildings, components):
+    """用 MST 思路把孤立分量连回主图，返回 [(i, j, dist), ...]。"""
+    if len(components) <= 1:
+        return []
+    components = sorted(components, key=len, reverse=True)
+    merged = set(components[0])
+    edges = []
+    for comp in components[1:]:
+        best_dist = float("inf")
+        best_pair = None
+        for i in merged:
+            for j in comp:
+                a, b = buildings[i], buildings[j]
+                d = math.hypot(a["x"] - b["x"], a["z"] - b["z"])
+                if d < best_dist:
+                    best_dist = d
+                    best_pair = (i, j)
+        if best_pair:
+            ctype = "corridor" if best_dist < 15 else "path"
+            print(f"  MST edge: {best_pair[0]}->{best_pair[1]}, "
+                  f"dist={best_dist:.1f}m, type={ctype}")
+            edges.append((best_pair[0], best_pair[1], best_dist))
+            merged |= comp
+    return edges
+
+
+def make_corridor(b_a, b_b, palette_wall, style="medieval", door_w=1.2):
+    """
+    在两栋建筑之间生成连接 mesh。
+    - corridor_len <= 0.1 → None（已贴墙）
+    - corridor_len < 15m  → 架空走廊 box（门宽，半高）
+    - corridor_len >= 15m → 地面路径条带（3m宽，0.1m高）
+    """
+    ax, az = b_a["x"], b_a["z"]
+    bx, bz = b_b["x"], b_b["z"]
+    dx, dz = bx - ax, bz - az
+    center_dist = math.hypot(dx, dz)
+    if center_dist < 0.1:
+        return None
+
+    angle = math.atan2(dz, dx)
+    ux, uz = dx / center_dist, dz / center_dist
+
+    offset_a = max(b_a.get("w", 8), b_a.get("d", 8)) / 2
+    offset_b = max(b_b.get("w", 8), b_b.get("d", 8)) / 2
+    corridor_len = center_dist - offset_a - offset_b
+
+    if corridor_len <= 0.1:
+        return None
+
+    mx = ax + ux * (offset_a + corridor_len / 2)
+    mz = az + uz * (offset_a + corridor_len / 2)
+
+    if corridor_len < 15.0:
+        # Enclosed corridor
+        corridor_w = max(door_w, 1.2)
+        corridor_h = min(b_a.get("height", 5), b_b.get("height", 5)) * 0.6
+        corridor_h = max(2.5, corridor_h)
+        m = trimesh.creation.box(extents=[corridor_len, corridor_h, corridor_w])
+        m.apply_translation([0, corridor_h / 2, 0])
+    else:
+        # Ground path strip (visible above ground plane)
+        m = trimesh.creation.box(extents=[corridor_len, 0.3, 2.5])
+        m.apply_translation([0, 0.15, 0])
+
+    rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
+    m.apply_transform(rot)
+    m.apply_translation([mx, 0, mz])
+
+    # Path strip: distinct deep brown for debug visibility
+    if corridor_len >= 15.0:
+        c = np.array([80, 60, 40, 255], dtype=np.uint8)
+    else:
+        c = np.array(palette_wall, dtype=np.uint8)
+    m.visual.face_colors = np.tile(c, (len(m.faces), 1))
+    return m
+
+
+def ensure_connectivity(scene, building_infos, style, palette_wall):
+    """
+    检查建筑连通性，为孤立建筑群添加连廊。
+    building_infos: [{"x", "z", "w", "d", "height"}, ...]
+    """
+    if len(building_infos) < 2:
+        return
+
+    graph = build_adjacency_graph(building_infos)
+    components = find_components(graph)
+
+    if len(components) <= 1:
+        return
+
+    edges = connect_components_mst(building_infos, components)
+    print(f"  [连通性] {len(components)} 个分量 → 添加 {len(edges)} 条连廊")
+
+    for ci, (i, j, dist) in enumerate(edges):
+        corridor = make_corridor(building_infos[i], building_infos[j],
+                                 palette_wall, style)
+        scene.add_geometry(corridor, node_name=f"corridor_{ci:02d}")
+
+
+# ─── 多区域合并 ────────────────────────────────────────────────
+
+def merge_zones(scenes: list) -> trimesh.Scene:
+    """
+    将多个 trimesh.Scene 水平拼合，按区域自动排列。
+    每个 zone 沿 X 轴偏移，间距根据各自 bounding box 计算。
+    """
+    merged = trimesh.Scene()
+    x_offset = 0.0
+    ZONE_GAP = 20.0  # 区域之间的间距（米）
+
+    for scene in scenes:
+        # 计算当前 scene 的 bounding box
+        all_verts = []
+        for geom in scene.geometry.values():
+            all_verts.append(geom.vertices)
+        if not all_verts:
+            continue
+
+        verts = np.vstack(all_verts)
+        min_x = verts[:, 0].min()
+        max_x = verts[:, 0].max()
+        width = max_x - min_x
+
+        # 平移所有 mesh 到正确位置
+        shift = x_offset - min_x
+        for name, geom in scene.geometry.items():
+            new_geom = geom.copy()
+            new_geom.vertices[:, 0] += shift
+            # 避免 mesh 名称冲突
+            unique_name = f"{name}_{id(scene)}"
+            merged.add_geometry(new_geom, geom_name=unique_name)
+
+        x_offset += width + ZONE_GAP
+
+    return merged
+
+
 # ─── 主生成器 ───────────────────────────────────────────────────
 
 def generate_level(
@@ -1025,6 +1205,12 @@ def generate_level(
     aw = area_w or area_size
     ad = area_d or area_size
     building_count = max(1, min(40, building_count))
+
+    # Random/organic: shrink area to keep buildings closer together
+    if layout_type in ("random", "organic") and area_w is None:
+        compact_size = max(40.0, building_count * 6.0)
+        aw = min(aw, compact_size)
+        ad = min(ad, compact_size)
 
     # 锚点风格参数（organic 布局使用）
     anchor_style  = _ANCHOR_STYLE.get(style, style)
@@ -1077,8 +1263,12 @@ def generate_level(
              "layout": layout_type, "area": f"{aw:.0f}m × {ad:.0f}m",
              "variation": variation}
 
+    # ══ PHASE 1: collect building positions + params (no mesh yet) ══
+    import trimesh.transformations as TF
+    build_plans = []   # [{slot, bparams, bpalette, fp_local, y_offset}, ...]
+    building_infos = []
+
     for bi, slot in enumerate(slots):
-        # 锚点建筑使用专属风格参数（不加变体）；其余正常变体
         if slot.is_anchor:
             bparams  = anchor_params
             bpalette = _derive_palette(anchor_style, anchor_params)
@@ -1086,10 +1276,59 @@ def generate_level(
             bparams  = _vary_params(params, variation, rng)
             bpalette = _derive_palette(style, bparams)
 
-        # 生成平面轮廓（始终保持局部坐标不旋转，旋转通过 mesh 变换完成）
         fp_local = _make_footprint(slot.fp_type, slot.w, slot.d, rng)
+        y_offset = float(rng.uniform(-0.3, 0.3)) * variation
 
-        # 生成建筑 mesh（在局部坐标 x_off=0, z_off=0 处，轮廓不旋转）
+        building_infos.append({
+            "x": slot.x_off + slot.w / 2,
+            "z": slot.z_off + slot.d / 2,
+            "w": slot.w,
+            "d": slot.d,
+            "height": float(bparams["height_range"][1]),
+            "yaw_deg": slot.yaw_deg,
+        })
+        build_plans.append({
+            "slot": slot, "bparams": bparams, "bpalette": bpalette,
+            "fp_local": fp_local, "y_offset": y_offset, "bi": bi,
+        })
+
+    # ══ PHASE 2: connectivity analysis → corridor edges + door overrides ══
+    graph = build_adjacency_graph(building_infos)
+    components = find_components(graph)
+    corridor_edges = connect_components_mst(building_infos, components)
+
+    # For each building connected by a corridor, override yaw so door faces the corridor
+    corridor_door_yaw = {}  # {building_idx: yaw_deg_toward_corridor}
+    for i, j, dist in corridor_edges:
+        ai, aj = building_infos[i], building_infos[j]
+        # Angle from i to j
+        angle_i_to_j = math.degrees(math.atan2(aj["z"] - ai["z"], aj["x"] - ai["x"]))
+        # Angle from j to i
+        angle_j_to_i = (angle_i_to_j + 180) % 360
+        # Only override if building doesn't already have a corridor door
+        if i not in corridor_door_yaw:
+            corridor_door_yaw[i] = angle_i_to_j
+        if j not in corridor_door_yaw:
+            corridor_door_yaw[j] = angle_j_to_i
+
+    if len(components) > 1:
+        print(f"  [连通性] {len(components)} 个分量 → {len(corridor_edges)} 条连廊")
+
+    # ══ PHASE 3: generate building meshes ══════════════════════
+    for plan in build_plans:
+        slot = plan["slot"]
+        bparams = plan["bparams"]
+        bpalette = plan["bpalette"]
+        fp_local = plan["fp_local"]
+        y_offset = plan["y_offset"]
+        bi = plan["bi"]
+
+        # If this building has a corridor connection, override its yaw
+        # so the door (front wall, z≈0) faces toward the corridor
+        effective_yaw = slot.yaw_deg
+        if bi in corridor_door_yaw:
+            effective_yaw = corridor_door_yaw[bi]
+
         try:
             room_meshes = gl.build_room(
                 bparams, bpalette,
@@ -1097,34 +1336,42 @@ def generate_level(
                 footprint=fp_local,
             )
 
-            # 如果需要旋转，对所有 mesh 应用世界变换（旋转+平移）
-            # 旋转中心 = 建筑局部中心 (w/2, 0, d/2)
-            if abs(slot.yaw_deg) > 0.01:
-                import trimesh.transformations as TF
+            if abs(effective_yaw) > 0.01:
                 cx, cz = slot.w / 2, slot.d / 2
-                # 绕局部中心旋转（Shapely 逆时针 → Y轴正方向旋转）
                 rot = TF.rotation_matrix(
-                    math.radians(slot.yaw_deg), [0, 1, 0], point=[cx, 0, cz])
+                    math.radians(effective_yaw), [0, 1, 0], point=[cx, 0, cz])
                 for mesh in room_meshes:
                     mesh.apply_transform(rot)
 
-            # 地基高度随机变化 ±0.3m → 建筑不全在同一水平面
-            y_offset = float(rng.uniform(-0.3, 0.3)) * variation
-
-            # 平移到世界位置（含地基高度）
             for mesh in room_meshes:
                 mesh.apply_translation([slot.x_off, y_offset, slot.z_off])
 
             for mi, mesh in enumerate(room_meshes):
                 scene.add_geometry(mesh, node_name=f"b{bi:02d}_{slot.fp_type}_{mi:03d}")
 
-            fp_area = fp_local.area
             stats["buildings"] += 1
-            stats["total_footprint_m2"] += fp_area
+            stats["total_footprint_m2"] += fp_local.area
 
         except Exception as e:
             print(f"  [警告] 建筑 {bi} 生成失败: {e}")
             continue
+
+    # ══ PHASE 3b: generate corridor meshes ═════════════════════
+    door_w = float(params.get("door_spec", {}).get("width", 1.2))
+    n_corridors = 0
+    for ci, (i, j, dist) in enumerate(corridor_edges):
+        if i < len(building_infos) and j < len(building_infos):
+            corridor = make_corridor(building_infos[i], building_infos[j],
+                                     palette["wall"], style, door_w)
+            if corridor is not None and len(corridor.faces) > 0:
+                scene.add_geometry(corridor, geom_name=f"corridor_{ci:02d}")
+                n_corridors += 1
+                ext = corridor.vertices.max(axis=0) - corridor.vertices.min(axis=0)
+                print(f"    corridor_{ci}: len={max(ext[0],ext[2]):.1f}m h={ext[1]:.1f}m")
+            else:
+                print(f"    corridor_{ci}: skipped (None or empty)")
+        else:
+            print(f"    corridor_{ci}: index out of range ({i},{j} vs {len(building_infos)})")
 
     # ── 打印统计 ──────────────────────────────────────────────
     n_faces = sum(len(g.faces) for g in scene.geometry.values())
@@ -1138,6 +1385,7 @@ def generate_level(
 
     if layout_type == "organic":
         print(f"  锚点风格 : {anchor_style}")
+
     if output_path:
         scene.export(output_path)
         print(f"  输出     : {output_path}")

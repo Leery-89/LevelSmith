@@ -197,8 +197,8 @@ MODERN = StyleDefinition(
         0.70,   # vertical_emphasis
     ],
     base_params={
-        "height_range_min": 2.8,
-        "height_range_max": 4.5,
+        "height_range_min": 4.0,
+        "height_range_max": 12.0,
         "wall_thickness":   0.20,
         "floor_thickness":  0.20,
         "door_width":       1.00,
@@ -209,8 +209,8 @@ MODERN = StyleDefinition(
         "subdivision":      2.0,
     },
     param_bounds={
-        "height_range_min": (2.4,  3.5),   # 现代住宅/办公层高范围
-        "height_range_max": (3.5,  6.0),   # 现代建筑净高一般不超6m
+        "height_range_min": (3.0,  5.0),   # 现代住宅/办公层高范围
+        "height_range_max": (8.0, 15.0),   # 现代建筑净高
         "wall_thickness":   (0.12, 0.35),  # 现代薄墙
         "floor_thickness":  (0.15, 0.28),
         "door_width":       (0.75, 1.20),
