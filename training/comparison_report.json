@@ -2,57 +2,93 @@
   "trained": {
     "medieval": {
       "height_range": [
-        3.4859,
-        8.039
+        3.6437,
+        8.3107
       ],
-      "wall_thickness": 0.7826,
-      "floor_thickness": 0.3424,
+      "wall_thickness": 0.7963,
+      "floor_thickness": 0.3347,
       "door_spec": {
-        "width": 1.2018,
-        "height": 2.8208
+        "width": 1.1973,
+        "height": 2.7237
       },
       "win_spec": {
-        "width": 0.5962,
-        "height": 1.2038,
-        "density": 0.2018
+        "width": 0.5968,
+        "height": 1.2246,
+        "density": 0.2084
       },
-      "subdivision": 4
+      "subdivision": 4,
+      "roof_type": 1,
+      "roof_pitch": 0.569,
+      "wall_color": [
+        0.55,
+        0.483,
+        0.456
+      ],
+      "has_battlements": 1,
+      "has_arch": 1,
+      "eave_overhang": 0.192,
+      "column_count": 2,
+      "window_shape": 1
     },
     "modern": {
       "height_range": [
-        2.8064,
-        4.4802
+        2.0,
+        10.7953
       ],
-      "wall_thickness": 0.1995,
-      "floor_thickness": 0.2016,
+      "wall_thickness": 0.1584,
+      "floor_thickness": 0.2004,
       "door_spec": {
-        "width": 1.0007,
-        "height": 2.2023
+        "width": 1.1112,
+        "height": 2.383
       },
       "win_spec": {
-        "width": 1.7565,
-        "height": 1.967,
-        "density": 0.6903
+        "width": 1.9977,
+        "height": 2.1305,
+        "density": 0.7231
       },
-      "subdivision": 2
+      "subdivision": 1,
+      "roof_type": 0,
+      "roof_pitch": 0.0,
+      "wall_color": [
+        0.774,
+        0.77,
+        0.734
+      ],
+      "has_battlements": 0,
+      "has_arch": 0,
+      "eave_overhang": 0.0,
+      "column_count": 0,
+      "window_shape": 0
     },
     "industrial": {
       "height_range": [
-        3.9655,
-        11.8477
+        2.3414,
+        9.6006
       ],
-      "wall_thickness": 0.4039,
-      "floor_thickness": 0.2491,
+      "wall_thickness": 0.4787,
+      "floor_thickness": 0.2765,
       "door_spec": {
-        "width": 1.9717,
-        "height": 3.9573
+        "width": 1.8593,
+        "height": 3.7592
       },
       "win_spec": {
-        "width": 1.0034,
-        "height": 0.7829,
-        "density": 0.3518
+        "width": 1.0773,
+        "height": 0.8922,
+        "density": 0.3094
       },
-      "subdivision": 3
+      "subdivision": 2,
+      "roof_type": 1,
+      "roof_pitch": 0.371,
+      "wall_color": [
+        0.496,
+        0.447,
+        0.418
+      ],
+      "has_battlements": 0,
+      "has_arch": 0,
+      "eave_overhang": 0.127,
+      "column_count": 1,
+      "window_shape": 1
     }
   },
   "baseline": {
@@ -75,22 +111,22 @@
   },
   "differences": {
     "medieval": {
-      "height_delta": 4.539,
-      "wall_t_delta": 0.483,
-      "win_density_delta": -0.198,
+      "height_delta": 4.811,
+      "wall_t_delta": 0.496,
+      "win_density_delta": -0.192,
       "subdiv_delta": 2
     },
     "modern": {
-      "height_delta": 0.98,
-      "wall_t_delta": -0.1,
-      "win_density_delta": 0.29,
-      "subdiv_delta": 0
+      "height_delta": 7.295,
+      "wall_t_delta": -0.142,
+      "win_density_delta": 0.323,
+      "subdiv_delta": -1
     },
     "industrial": {
-      "height_delta": 8.348,
-      "wall_t_delta": 0.104,
-      "win_density_delta": -0.048,
-      "subdiv_delta": 1
+      "height_delta": 6.101,
+      "wall_t_delta": 0.179,
+      "win_density_delta": -0.091,
+      "subdiv_delta": 0
     }
   }
 }

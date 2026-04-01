@@ -1,0 +1,51 @@
+<svg width="720" height="700" viewBox="0 0 720 700" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <style>
+    .title { font-size: 14px; font-weight: 600; fill: #fff; }
+    .subtitle { font-size: 11px; fill: rgba(255,255,255,0.8); }
+    .detail { font-size: 11px; fill: rgba(255,255,255,0.65); }
+    .badge-text { font-size: 10px; font-weight: 600; }
+    .input-title { font-size: 13px; font-weight: 600; fill: #e0e0e0; }
+    .arrow-line { stroke: #888; stroke-width: 1.5; }
+  </style>
+  <defs>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M1 1L8 5L1 9" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect x="220" y="24" width="280" height="48" rx="24" fill="#2d2d3a" stroke="#555" stroke-width="1"/>
+  <text class="input-title" x="360" y="52" text-anchor="middle">User prompt</text>
+  <line x1="360" y1="72" x2="360" y2="108" class="arrow-line" marker-end="url(#arrowhead)"/>
+  <rect x="100" y="110" width="440" height="105" rx="12" fill="#6C63CE" filter="url(#shadow)"/>
+  <text class="title" x="320" y="140" text-anchor="middle">1 · Archetype planning agent</text>
+  <text class="subtitle" x="320" y="162" text-anchor="middle">What buildings? What roles? What relationships?</text>
+  <text class="detail" x="320" y="182" text-anchor="middle">→ primary keep + secondary barracks + tertiary houses + ambient</text>
+  <rect x="555" y="125" width="52" height="22" rx="11" fill="#2ecc71"/>
+  <text class="badge-text" x="581" y="140" text-anchor="middle" fill="#fff">live</text>
+  <line x1="360" y1="215" x2="360" y2="251" class="arrow-line" marker-end="url(#arrowhead)"/>
+  <rect x="100" y="253" width="440" height="105" rx="12" fill="#1A8F6E" filter="url(#shadow)"/>
+  <text class="title" x="320" y="283" text-anchor="middle">2 · Distribution planning agent</text>
+  <text class="subtitle" x="320" y="305" text-anchor="middle">Where does each building go? What density? What cluster?</text>
+  <text class="detail" x="320" y="325" text-anchor="middle">→ coordinates, zones, spacing, orientation</text>
+  <rect x="555" y="268" width="64" height="22" rx="11" fill="#f39c12"/>
+  <text class="badge-text" x="587" y="283" text-anchor="middle" fill="#fff">partial</text>
+  <line x1="360" y1="358" x2="360" y2="394" class="arrow-line" marker-end="url(#arrowhead)"/>
+  <rect x="100" y="396" width="440" height="105" rx="12" fill="#B8860B" filter="url(#shadow)"/>
+  <text class="title" x="320" y="426" text-anchor="middle">3 · Style &amp; material director</text>
+  <text class="subtitle" x="320" y="448" text-anchor="middle">What does it look like? What materials? What aging?</text>
+  <text class="detail" x="320" y="468" text-anchor="middle">→ roof form, wall texture, moss, cracks, lighting</text>
+  <rect x="555" y="411" width="58" height="22" rx="11" fill="#666"/>
+  <text class="badge-text" x="584" y="426" text-anchor="middle" fill="#ccc">saved</text>
+  <line x1="360" y1="501" x2="360" y2="537" class="arrow-line" marker-end="url(#arrowhead)"/>
+  <rect x="100" y="539" width="440" height="105" rx="12" fill="#C0553A" filter="url(#shadow)"/>
+  <text class="title" x="320" y="569" text-anchor="middle">4 · Wall interior planning agent</text>
+  <text class="subtitle" x="320" y="591" text-anchor="middle">What's inside the walls? Patrol paths? Guard rooms?</text>
+  <text class="detail" x="320" y="611" text-anchor="middle">→ modules, connectivity graph, defense layers</text>
+  <rect x="555" y="554" width="58" height="22" rx="11" fill="#666"/>
+  <text class="badge-text" x="584" y="569" text-anchor="middle" fill="#ccc">saved</text>
+  <line x1="360" y1="644" x2="360" y2="674" class="arrow-line" marker-end="url(#arrowhead)"/>
+  <rect x="240" y="664" width="240" height="28" rx="6" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="360" y="682" text-anchor="middle" font-size="12" fill="#aaa">⚙ Geometry engine → GLB / FBX</text>
+</svg>

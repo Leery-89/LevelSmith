@@ -1,11 +1,15 @@
 """
 LevelSmith 训练数据生成器
-基于 style_registry.py 中7个风格，通过3种扩增策略生成训练数据集。
+基于 style_registry.py 中20个风格，通过3种扩增策略生成训练数据集。
 
 扩增策略:
   1. Gaussian Noise    — 在特征向量和参数上叠加高斯噪声
   2. Interpolation     — 在两个风格之间线性插值 (混合风格)
   3. Param Perturbation— 固定风格特征，对输出参数施加更大扰动 (模拟设计变体)
+
+数据维度:
+  X shape: [N, 16]   — 建筑风格特征向量
+  y shape: [N, 20]   — 结构参数（原有10 + 新增10: roof/color/decoration/window_shape）
 """
 
 import json
@@ -94,15 +98,16 @@ def generate_dataset(
     n_perturb: int = 800,
     val_ratio: float = 0.15,
     save_dir: str = None,
+    styles: list = None,   # None = all styles; pass e.g. ["medieval"] for subset
 ) -> Dict[str, np.ndarray]:
     """
     生成完整训练/验证数据集。
 
     Returns:
         dict with keys: X_train, y_train, X_val, y_val
-        X shape: [N, 16], y shape: [N, 10]
+        X shape: [N, 16], y shape: [N, 20]
     """
-    style_names = list(STYLE_REGISTRY.keys())
+    style_names = styles if styles is not None else list(STYLE_REGISTRY.keys())
     all_fvs, all_pvs = [], []
 
     print("生成训练数据...")
@@ -126,11 +131,15 @@ def generate_dataset(
         all_pvs.append(pvs_p)
         print(f"  [{name}] 参数扰动: +{n_perturb} 样本")
 
-    # 策略2: 风格插值 (跨风格)
-    fvs_i, pvs_i = augment_interpolation(style_names, n_interp_per_pair)
-    all_fvs.append(fvs_i)
-    all_pvs.append(pvs_i)
-    print(f"  [interpolation] 风格插值: +{len(fvs_i)} 样本 ({len(style_names)*(len(style_names)-1)//2} 对 × {n_interp_per_pair})")
+    # 策略2: 风格插值 (跨风格，单风格时跳过)
+    n_pairs = len(style_names) * (len(style_names) - 1) // 2
+    if n_pairs > 0:
+        fvs_i, pvs_i = augment_interpolation(style_names, n_interp_per_pair)
+        all_fvs.append(fvs_i)
+        all_pvs.append(pvs_i)
+        print(f"  [interpolation] 风格插值: +{len(fvs_i)} 样本 ({n_pairs} 对 × {n_interp_per_pair})")
+    else:
+        print(f"  [interpolation] 仅1种风格，跳过插值")
 
     X = np.vstack(all_fvs).astype(np.float32)
     y = np.vstack(all_pvs).astype(np.float32)

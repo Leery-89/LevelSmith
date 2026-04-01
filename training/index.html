@@ -52,6 +52,25 @@
   /* Empty state */
   .empty-state { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #555; }
   .empty-state p { font-size: 14px; margin-top: 8px; }
+
+  /* Archetype plan */
+  .arch-identity { margin-bottom: 8px; }
+  .arch-theme { display: block; color: #e94560; font-weight: 600; font-size: 13px; }
+  .arch-desc { display: block; color: #8892b0; font-size: 11px; margin-top: 2px; }
+  .arch-buildings { margin: 6px 0; }
+  .arch-building { display: flex; align-items: center; gap: 6px; padding: 2px 0; font-size: 11px; }
+  .arch-role { font-size: 10px; min-width: 70px; }
+  .arch-type { color: #ccd6f6; flex: 1; }
+  .arch-scale { color: #6272a4; font-size: 10px; }
+  .arch-relations { margin: 8px 0; border-top: 1px solid #2a2a4a; padding-top: 6px; }
+  .arch-label { color: #6272a4; font-size: 10px; text-transform: uppercase; margin-bottom: 4px; }
+  .arch-rel { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 0; }
+  .arch-rel-ids { color: #8892b0; font-family: monospace; }
+  .arch-rel-type { color: #4ecdc4; font-size: 10px; }
+  .arch-meta { margin: 8px 0; border-top: 1px solid #2a2a4a; padding-top: 6px; }
+  .arch-meta-line { color: #8892b0; font-size: 11px; padding: 1px 0; }
+  .arch-validation { margin-top: 6px; font-size: 11px; font-weight: 600; }
+  .arch-error { color: #e94560; font-size: 10px; }
 </style>
 </head>
 <body>
@@ -113,10 +132,20 @@
       <div class="stat"><span>GLB size</span><span class="stat-val" id="s-glb">-</span></div>
       <div class="stat"><span>FBX size</span><span class="stat-val" id="s-fbx">-</span></div>
       <div class="stat"><span>Time</span><span class="stat-val" id="s-time">-</span></div>
+      <div class="stat"><span>Clusters</span><span class="stat-val" id="s-clusters">-</span></div>
+      <div class="stat"><span>Roads</span><span class="stat-val" id="s-roads">-</span></div>
     </div>
     <div class="parsed-info" id="parsedInfo" style="display:none;">
       <h3 style="margin-bottom:6px;">Parsed Parameters</h3>
       <div id="parsedContent"></div>
+    </div>
+    <div class="parsed-info" id="archetypeSection" style="display:none;">
+      <h3 style="margin-bottom:6px;">Archetype Plan</h3>
+      <div id="archetypeContent"></div>
+    </div>
+    <div class="parsed-info" id="buildingInfo" style="display:none;">
+      <h3 style="margin-bottom:6px;">Buildings</h3>
+      <div id="buildingList" style="font-size:11px; max-height:200px; overflow-y:auto;"></div>
     </div>
   </div>
 </div>
@@ -217,6 +246,78 @@ function loadGLB(url) {
   });
 }
 
+// ── Archetype plan renderer ──
+function renderArchetypePlan(plan) {
+  const container = document.getElementById('archetypeContent');
+  let html = '';
+
+  // Archetype title
+  if (plan.archetype) {
+    html += `<div class="arch-identity">`;
+    html += `<span class="arch-theme">${plan.archetype.replace(/_/g, ' ')}</span>`;
+    if (plan.description) {
+      html += `<span class="arch-desc">${plan.description}</span>`;
+    }
+    html += `</div>`;
+  }
+
+  // Building roles
+  if (plan.buildings && plan.buildings.length > 0) {
+    const roleOrder = {primary: 0, secondary: 1, tertiary: 2, ambient: 3};
+    const sorted = [...plan.buildings].sort((a,b) =>
+      (roleOrder[a.role]||9) - (roleOrder[b.role]||9));
+    const roleColors = {
+      primary: '#e94560', secondary: '#4ecdc4',
+      tertiary: '#95a5a6', ambient: '#7c6f64',
+    };
+    html += '<div class="arch-buildings">';
+    for (const b of sorted) {
+      const color = roleColors[b.role] || '#95a5a6';
+      const count = (b.count && b.count > 1) ? ` x${b.count}` : '';
+      html += `<div class="arch-building">
+        <span class="arch-role" style="color:${color}">${b.role}</span>
+        <span class="arch-type">${b.label || b.building_type || ''}${count}</span>
+        <span class="arch-scale">${b.style_key || ''}</span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  // Spatial rules
+  if (plan.spatial_rules && plan.spatial_rules.length > 0) {
+    html += '<div class="arch-relations">';
+    html += '<div class="arch-label">Spatial Rules</div>';
+    for (const r of plan.spatial_rules) {
+      if (typeof r === 'string') {
+        html += `<div class="arch-meta-line">${r}</div>`;
+      } else {
+        html += `<div class="arch-rel">
+          <span class="arch-rel-ids">${r.from} &rarr; ${r.to}</span>
+          <span class="arch-rel-type">${r.relation}</span>
+        </div>`;
+      }
+    }
+    html += '</div>';
+  }
+
+  // Meta: enclosure + road + atmosphere
+  const meta = [];
+  if (plan.enclosure) meta.push(`Enclosure: ${plan.enclosure.type}`);
+  if (plan.road_preference) meta.push(`Roads: ${plan.road_preference.layout_type}`);
+  if (plan.atmosphere) {
+    const a = plan.atmosphere;
+    const parts = [a.density_feel, a.lighting, a.condition].filter(Boolean);
+    if (parts.length) meta.push(`Feel: ${parts.join(', ')}`);
+  }
+  if (meta.length > 0) {
+    html += '<div class="arch-meta">';
+    for (const m of meta) html += `<div class="arch-meta-line">${m}</div>`;
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
 // ── Load styles ──
 async function loadStyles() {
   try {
@@ -275,6 +376,29 @@ async function doGenerate() {
     document.getElementById('s-fbx').textContent = data.stats.fbx_kb + ' KB';
     document.getElementById('s-time').textContent = data.stats.time_s + 's';
 
+    // Update cluster/road stats
+    const cls = data.clusters || [];
+    const clSizes = cls.map(c => c.size).join(', ');
+    document.getElementById('s-clusters').textContent =
+      cls.length + (clSizes ? ` (${clSizes})` : '');
+    const rg = data.road_graph || {};
+    document.getElementById('s-roads').textContent =
+      rg.renderable ? 'rendered' : 'data-only';
+
+    // Building info panel
+    const bInfoDiv = document.getElementById('buildingInfo');
+    const bList = document.getElementById('buildingList');
+    const binfos = data.building_infos || [];
+    if (binfos.length > 0) {
+      bInfoDiv.style.display = 'block';
+      bList.innerHTML = binfos.map(b => {
+        const main = b.is_main ? ' <b>main</b>' : '';
+        return `<div>B${b.idx}: ${b.yaw_deg}&deg;, cl${b.cluster_id}${main}</div>`;
+      }).join('');
+    } else {
+      bInfoDiv.style.display = 'none';
+    }
+
     // Update parsed info
     const pi = document.getElementById('parsedInfo');
     pi.style.display = 'block';
@@ -282,6 +406,14 @@ async function doGenerate() {
       Object.entries(data.parsed).map(([k,v]) =>
         `<div><code>${k}</code>: <strong>${v}</strong></div>`
       ).join('');
+
+    // Archetype plan
+    if (data.archetype_plan) {
+      document.getElementById('archetypeSection').style.display = 'block';
+      renderArchetypePlan(data.archetype_plan);
+    } else {
+      document.getElementById('archetypeSection').style.display = 'none';
+    }
 
     // Download buttons
     const dlGlb = document.getElementById('dlGlb');
