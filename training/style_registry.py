@@ -1470,7 +1470,7 @@ def get_feature_vector(style_name: str) -> np.ndarray:
 
 def get_param_vector(style_name: str) -> np.ndarray:
     """返回指定风格的参数向量 (numpy array, shape: [OUTPUT_DIM])，已归一化到 [0,1]
-    原有10个参数来自 StyleDefinition.base_params；新增10个来自 STYLE_EXTRA_PARAMS。
+    原有10个参数来自 StyleDefinition.base_params；新增13个（10 visual + 3 mesh geometry）来自 STYLE_EXTRA_PARAMS。
     """
     style = STYLE_REGISTRY[style_name]
     extra_base = STYLE_EXTRA_PARAMS.get(style_name, {}).get("base", {})

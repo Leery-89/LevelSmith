@@ -1282,16 +1282,16 @@ def build_room(params, palette, x_off=0.0, z_off=0.0, footprint=None,
     detail_density  = float(params.get("detail_density", 0.5))
     simple_ratio    = float(params.get("simple_ratio", 0.4))
 
-    # mesh_complexity > 0.7 → 增加装饰细节（更多拱门线脚、柱子）
-    if mesh_complexity > 0.7:
-        if column_count < 2:
-            column_count = 2
+    # mesh_complexity → 渐进式增加装饰细节（柱子数量随复杂度缩放）
+    extra_columns = int(mesh_complexity * 4)  # 0~0.64 → 0~2 根柱子
+    column_count = max(column_count, extra_columns)
+    if mesh_complexity > 0.5:
         has_arch = True
 
-    # detail_density > 0.6 → 增密窗户/门
-    if detail_density > 0.6 and "win_spec" in params:
+    # detail_density > 0.5 → 增密窗户/门
+    if detail_density > 0.5 and "win_spec" in params:
         old_d = params["win_spec"].get("density", 0.3)
-        boost = (detail_density - 0.6) * 0.5  # max +0.2 boost
+        boost = (detail_density - 0.5) * 0.4  # max +0.2 boost
         params = {**params, "win_spec": {**params["win_spec"],
                   "density": min(0.95, old_d + boost)}}
 

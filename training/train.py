@@ -213,6 +213,10 @@ def export_trained_params(
                 "eave_overhang":   round(float(params["eave_overhang"]), 3),
                 "column_count":    params["column_count"],
                 "window_shape":    params["window_shape"],
+                # ── 几何复杂度3参数（0~1 比例值） ──
+                "mesh_complexity":  round(float(params["mesh_complexity"]), 3),
+                "detail_density":   round(float(params["detail_density"]), 3),
+                "simple_ratio":     round(float(params["simple_ratio"]), 3),
             },
         }
 

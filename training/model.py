@@ -90,7 +90,7 @@ class StyleParamLoss(nn.Module):
 
 def build_model(
     input_dim: int = 16,
-    output_dim: int = 20,
+    output_dim: int = 23,
     hidden_dims: List[int] = None,
     dropout: float = 0.2,
     device: str = "cuda",
