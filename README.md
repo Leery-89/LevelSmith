@@ -253,28 +253,39 @@ flowchart LR
 
 ```
 levelsmith/
-├── training/
-│   ├── api.py                  # FastAPI server + DeepSeek integration
-│   ├── index.html              # Web UI (Three.js 3D preview)
-│   ├── model.py                # StyleParamMLP neural network
-│   ├── style_registry.py       # 20 styles × 23 parameters
-│   ├── generate_level.py       # Single building geometry (CSG)
-│   ├── level_layout.py         # Multi-building layout engine
-│   ├── text_encoder.py         # Text → 16-dim feature vector
-│   ├── train.py                # Training script
-│   ├── hardware_config.py      # GPU/NPU/CPU device routing
-│   ├── parse_w2l.py            # Witcher 3 level file parser
-│   ├── extract_enclosure.py    # W3 enclosure data extraction
-│   ├── layout_model.pt         # Trained layout model weights
-│   ├── .env                    # API keys (gitignored)
-│   └── docs/
-│       ├── archetype_planning_agent.md
-│       ├── style_material_director.md
-│       ├── wall_interior_agent_design.md
-│       ├── model_training_roadmap.md
-│       └── images/
-│           └── agent_pipeline.svg
-└── README.md
+├── README.md
+├── .gitignore
+└── training/
+    ├── api.py                  # FastAPI server + DeepSeek integration
+    ├── index.html              # Web UI (Three.js 3D preview)
+    ├── model.py                # StyleParamMLP neural network
+    ├── style_registry.py       # 20 styles × 23 parameters
+    ├── generate_level.py       # Single building geometry (CSG)
+    ├── generate_data.py        # Synthetic training data generation
+    ├── level_layout.py         # Multi-building layout engine + road-lot system
+    ├── layout_model.py         # Autoregressive layout Transformer
+    ├── text_encoder.py         # Text → 16-dim feature vector
+    ├── train.py                # Training script
+    ├── inference.py            # Model loading + inference utilities
+    ├── hardware_config.py      # GPU/NPU/CPU device routing
+    ├── glb_to_fbx.py           # GLB → UE5-compatible FBX converter
+    ├── parse_w2l.py            # Witcher 3 .w2l level file parser
+    ├── parse_w2mesh.py         # Witcher 3 mesh complexity extraction
+    ├── extract_enclosure.py    # W3 enclosure parameter extraction
+    ├── extract_connectivity.py # Building connectivity extraction
+    ├── procedural_materials.py # Procedural material generation
+    ├── best_model.pt           # Trained StyleParamMLP weights
+    ├── trained_style_params.json # Exported style parameters (23-dim)
+    ├── train_history.json      # Training loss/MAE history
+    ├── .env                    # API keys (gitignored)
+    └── docs/
+        ├── archetype_planning_agent.md
+        ├── style_material_director.md
+        ├── wall_interior_agent_design.md
+        ├── model_training_roadmap.md
+        ├── training_data_sources.md
+        └── images/
+            └── agent_pipeline.svg
 ```
 
 ---
@@ -288,7 +299,7 @@ Python 3.10+, PyTorch, trimesh, shapely, FastAPI.
 ### Installation
 
 ```bash
-git clone https://github.com/pabloss20/levelsmith.git
+git clone https://github.com/Leery-89/LevelSmith.git
 cd levelsmith/training
 
 pip install torch trimesh shapely fastapi uvicorn python-dotenv

@@ -1,3 +1,11 @@
 .env
 __pycache__/
 *.pyc
+*.glb
+*.fbx
+*.pt
+*.onnx
+outputs/
+generated/
+.DS_Store
+Thumbs.db
