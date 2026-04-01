@@ -1,3 +1,5 @@
+**English** | [中文](README_zh.md)
+
 # LevelSmith
 
 **AI-driven procedural level generation for game development.**
