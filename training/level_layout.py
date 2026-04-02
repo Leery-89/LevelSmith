@@ -3367,6 +3367,38 @@ def _skeleton_to_road_graph(skeleton: list, area_w: float, area_d: float,
 
 # ─── 主生成器（Phase 0-7 cluster pipeline）───────────────────────
 
+def generate_from_graph(graph_name: str, area_w: float = 100.0,
+                        area_d: float = 100.0,
+                        seed: int = 42) -> tuple:
+    """
+    Layout graph → block program → (BuildingSlots, wall_config, road_segments).
+
+    Returns a tuple consumed by generate_level(graph_name=...).
+    """
+    from compound_layout import load_layout_graph, graph_to_block_program
+
+    graph = load_layout_graph(graph_name)
+    rng_rs = np.random.RandomState(seed)
+    program = graph_to_block_program(graph, area_w, area_d, rng_rs)
+
+    slots = []
+    for block in program["blocks"]:
+        # Convert center-based coords to corner-based (BuildingSlot uses x_off/z_off)
+        w, d = block["w"], block["d"]
+        slot = BuildingSlot(
+            x_off=block["cx"] - w / 2,
+            z_off=block["cz"] - d / 2,
+            w=w, d=d,
+            fp_type="rect",
+            yaw_deg=block.get("yaw", 0),
+        )
+        slot.style_key = block["style_key"]
+        slot.role = block["role"]
+        slots.append(slot)
+
+    return slots, program.get("walls"), program.get("roads"), program.get("metadata")
+
+
 def generate_level(
     style: str,
     layout_type: str = "street",
@@ -3383,6 +3415,8 @@ def generate_level(
     building_roles: Optional[list] = None,
     spatial_rules: Optional[list] = None,
     enclosure_config: Optional[dict] = None,
+    # ── layout graph mode (optional) ──
+    graph_name: Optional[str] = None,
 ) -> trimesh.Scene:
     """
     Phase 0: Area setup
@@ -3411,7 +3445,7 @@ def generate_level(
     ad = area_d or area_size
     building_count = max(1, min(40, building_count))
 
-    if layout_type == "organic" and area_w is None:
+    if layout_type == "organic" and area_w is None and not graph_name:
         compact_size = max(60.0, building_count * 8.0)
         aw = min(aw, compact_size)
         ad = min(ad, compact_size)
@@ -3433,7 +3467,20 @@ def generate_level(
 
     # ══ Phase 1: Layout → slots ══════════════════════════════════
     _road_skeleton = None
-    if building_roles:
+    _graph_walls = None
+    _graph_roads = None
+
+    if graph_name:
+        # Graph-driven compound layout (e.g. kaer_morhen)
+        slots, _graph_walls, _graph_roads, _graph_meta = generate_from_graph(
+            graph_name, aw, ad, seed)
+        building_count = len(slots)
+        # Force walled enclosure from graph
+        if not enclosure_config:
+            enclosure_config = {"type": "walled"}
+        print(f"  [graph:{graph_name}] placed {len(slots)} buildings "
+              f"(roles: {[s.role for s in slots]})")
+    elif building_roles:
         # Archetype-driven phased placement
         result = _archetype_placement(
             building_roles, spatial_rules, aw, ad, style, variation, rng,
@@ -3497,7 +3544,18 @@ def generate_level(
     print(f"  Main buildings: {main_idxs}")
 
     # ══ Phase 3: Road network (cluster-based) ════════════════════
-    if _road_skeleton:
+    if _graph_roads:
+        # Graph mode: build road graph from approach roads
+        road_graph = RoadGraph()
+        for seg in _graph_roads:
+            pts = seg.get("points", [])
+            prev_id = None
+            for px, pz in pts:
+                nid = road_graph.add_node(px, pz, ntype="road")
+                if prev_id is not None:
+                    road_graph.add_edge(prev_id, nid, road_type="main", width=6.0)
+                prev_id = nid
+    elif _road_skeleton:
         # Use skeleton coordinates (matches lot boundaries exactly)
         road_graph = _skeleton_to_road_graph(_road_skeleton, aw, ad, style)
     else:
@@ -3755,6 +3813,8 @@ def main():
                              "  紧凑/密集/拥挤 → 0.5m\n"
                              "  宽松/分散/稀疏 → 4.0m\n"
                              "  其他           → 1.5m")
+    parser.add_argument("--graph",     type=str,   default=None,
+                        help="Layout graph 名称 (e.g. kaer_morhen) → compound 模式")
     args = parser.parse_args()
 
     # 密度优先级：--prompt 关键词 > --min-gap 数值 > 默认 1.5
@@ -3789,6 +3849,7 @@ def main():
         area_w         = args.area_w,
         area_d         = args.area_d,
         min_gap        = min_gap,
+        graph_name     = args.graph,
     )
 
 

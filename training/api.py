@@ -324,7 +324,8 @@ DENSITY_MAP = {"dense": 1.5, "normal": 3.0, "sparse": 6.0}
 
 
 def run_generation(zones: list, min_gap: float, seed: int,
-                   archetype_plan: dict = None) -> dict:
+                   archetype_plan: dict = None,
+                   graph_name: str = None) -> dict:
     """Run level generation for one or more zones, merge, export GLB + FBX."""
     import level_layout
     import glb_to_fbx
@@ -333,7 +334,9 @@ def run_generation(zones: list, min_gap: float, seed: int,
     for i, zone in enumerate(zones):
         gap = DENSITY_MAP.get(zone.get("density", "normal"), min_gap)
         extra_kw = {}
-        if archetype_plan:
+        if graph_name:
+            extra_kw["graph_name"] = graph_name
+        elif archetype_plan:
             extra_kw["building_roles"] = archetype_plan.get("buildings")
             extra_kw["spatial_rules"] = archetype_plan.get("spatial_rules")
             extra_kw["enclosure_config"] = archetype_plan.get("enclosure")
@@ -468,9 +471,22 @@ async def generate(req: GenerateRequest):
 
     seed = req.seed or int(time.time()) % 100000
 
-    # 4. Generate
+    # 4. Detect layout graph mode
+    import re
+    _GRAPH_KEYWORDS = {
+        r"kaer\s*morhen|凯尔莫汉": "kaer_morhen",
+    }
+    graph_name = None
+    prompt_lower = req.prompt.lower()
+    for pattern, gname in _GRAPH_KEYWORDS.items():
+        if re.search(pattern, prompt_lower):
+            graph_name = gname
+            break
+
+    # 5. Generate
     arch_plan = parsed.get("archetype_plan")
-    result = run_generation(zones, min_gap, seed, archetype_plan=arch_plan)
+    result = run_generation(zones, min_gap, seed, archetype_plan=arch_plan,
+                            graph_name=graph_name)
     result["parsed"] = {"zones": zones, "min_gap": min_gap, "seed": seed}
     result["archetype_plan"] = arch_plan
     return result
