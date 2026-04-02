@@ -2741,6 +2741,9 @@ def _subdivide_street_lots(lots: list, area_w: float, area_d: float,
                     setback = float(rng.uniform(sb_min, sb_max))
                 fill_ratio = fill
 
+            # Enforce minimum lot width for buildable lots
+            if role_hint == "standard" and w < 12.0:
+                w = min(12.0, span_x - cursor)
             if w < 3:
                 break
 
