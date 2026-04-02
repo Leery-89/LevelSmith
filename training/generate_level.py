@@ -1366,9 +1366,127 @@ def build_room(params, palette, x_off=0.0, z_off=0.0, footprint=None,
         meshes.extend(build_battlements(
             footprint, height, floor_t, wall_t, palette, x_off, z_off))
 
-    # ── 拱门/线脚/柱子已移除 ──────────────────────────────────
-    # arch_trims, window_shape_trims, columns 凸出墙面产生阴影条，
-    # 暂时禁用。后续可用贴图（法线贴图）替代凸出几何。
+    # ── 中尺度构件增强 ─────────────────────────────────────────
+    _b = footprint.bounds
+    fp_w = _b[2] - _b[0]
+    fp_d = _b[3] - _b[1]
+    fp_cx = (_b[0] + _b[2]) / 2
+    fp_cz = (_b[1] + _b[3]) / 2
+    wc = palette["wall"]
+
+    # 2a. Layered eave — edge beams for deep overhangs (japanese identifier)
+    eave_extent = eave_overhang * max(fp_w, fp_d) * 0.3
+    if eave_extent > 0.8:
+        beam_t = 0.12
+        beam_h = 0.15
+        y_eave = height + floor_t - 0.08
+        darker = [max(0, int(wc[0] * 0.75)), max(0, int(wc[1] * 0.75)),
+                  max(0, int(wc[2] * 0.75)), wc[3]]
+        # Front + back edge beams
+        for dz, blen in [(fp_cz - fp_d / 2 - eave_extent + beam_t / 2, fp_w + eave_extent * 2),
+                         (fp_cz + fp_d / 2 + eave_extent - beam_t / 2, fp_w + eave_extent * 2)]:
+            meshes.append(make_box(
+                [blen, beam_h, beam_t],
+                [x_off + fp_cx, y_eave, z_off + dz], darker))
+        # Left + right edge beams
+        for dx, blen in [(fp_cx - fp_w / 2 - eave_extent + beam_t / 2, fp_d + eave_extent * 2),
+                         (fp_cx + fp_w / 2 + eave_extent - beam_t / 2, fp_d + eave_extent * 2)]:
+            meshes.append(make_box(
+                [beam_t, beam_h, blen],
+                [x_off + dx, y_eave, z_off + fp_cz], darker))
+
+    # 2b. Base platform — raised stone foundation
+    base_height_param = float(params.get("_base_height", 0.0))
+    if base_height_param <= 0:
+        # Infer from profile: high base if wall thin + deep eave (japanese)
+        if wall_t < 0.3 and eave_overhang > 0.5:
+            base_height_param = 0.45
+    if base_height_param > 0.3:
+        base_h = base_height_param * 1.5
+        base_ext = 0.3
+        base_c = [max(0, int(wc[0] * 0.80)), max(0, int(wc[1] * 0.78)),
+                  max(0, int(wc[2] * 0.75)), wc[3]]
+        meshes.append(make_box(
+            [fp_w + base_ext * 2, base_h, fp_d + base_ext * 2],
+            [x_off + fp_cx, base_h / 2 - floor_t, z_off + fp_cz], base_c))
+
+    # 2c. Deep window reveals — thick walls get visible window surrounds
+    if wall_t > 0.5:
+        reveal_d = wall_t * 0.35
+        reveal_c = [max(0, int(wc[0] * 0.85)), max(0, int(wc[1] * 0.85)),
+                    max(0, int(wc[2] * 0.82)), wc[3]]
+        # Add reveal frames along front wall (z_min edge)
+        win_spec = params.get("win_spec", {})
+        ww = float(win_spec.get("width", 0.8))
+        wh = float(win_spec.get("height", 1.0))
+        wd = float(win_spec.get("density", 0.3))
+        n_wins = max(1, int(fp_w * wd / (ww + 0.5)))
+        for wi in range(min(n_wins, 4)):
+            wx = _b[0] + (wi + 1) * fp_w / (n_wins + 1)
+            wy = height * 0.4
+            # Top reveal
+            meshes.append(make_box(
+                [ww + 0.06, 0.08, reveal_d],
+                [x_off + wx, wy + wh / 2, z_off + _b[1] - reveal_d / 2], reveal_c))
+            # Bottom reveal (sill)
+            meshes.append(make_box(
+                [ww + 0.06, 0.06, reveal_d * 1.2],
+                [x_off + wx, wy - wh / 2, z_off + _b[1] - reveal_d / 2 - 0.02], reveal_c))
+
+    # 2d. Columns and buttresses
+    if column_count >= 4 and wall_t < 0.35:
+        # Thin walls + many columns = japanese exposed pillars (cylindrical)
+        col_r = 0.08
+        col_h = height + floor_t
+        col_c = [max(0, int(wc[0] * 0.6)), max(0, int(wc[1] * 0.55)),
+                 max(0, int(wc[2] * 0.48)), wc[3]]
+        # Place along front edge
+        for ci in range(min(column_count, 8)):
+            cx_col = _b[0] + (ci + 1) * fp_w / (min(column_count, 8) + 1)
+            col = trimesh.creation.cylinder(radius=col_r, height=col_h, sections=8)
+            col.apply_translation([x_off + cx_col, col_h / 2, z_off + _b[1]])
+            c_arr = np.array(col_c, dtype=np.uint8)
+            col.visual.face_colors = np.tile(c_arr, (len(col.faces), 1))
+            meshes.append(col)
+    elif column_count >= 1 and wall_t > 0.5:
+        # Thick walls + few columns = medieval buttresses (stepped)
+        butt_w_base = 0.40
+        butt_w_top = 0.25
+        butt_d = 0.40
+        butt_c = [max(0, int(wc[0] * 0.88)), max(0, int(wc[1] * 0.86)),
+                  max(0, int(wc[2] * 0.82)), wc[3]]
+        corners = [(_b[0], _b[1]), (_b[2], _b[1]), (_b[0], _b[3]), (_b[2], _b[3])]
+        for ci, (bx, bz) in enumerate(corners[:min(column_count, 4)]):
+            # Bottom wider block
+            meshes.append(make_box(
+                [butt_w_base, height * 0.65, butt_d],
+                [x_off + bx, height * 0.325, z_off + bz], butt_c))
+            # Top narrower block
+            meshes.append(make_box(
+                [butt_w_top, height * 0.35, butt_d * 0.7],
+                [x_off + bx, height * 0.65 + height * 0.175, z_off + bz], butt_c))
+
+    # 2e. Industrial parapet — low wall at flat roof edge
+    if roof_type == 0 and column_count == 0 and not has_battlements:
+        parapet_h = 0.40
+        parapet_t = wall_t * 0.5
+        par_c = [max(0, int(wc[0] * 0.90)), max(0, int(wc[1] * 0.90)),
+                 max(0, int(wc[2] * 0.88)), wc[3]]
+        par_y = height + floor_t * 2 + parapet_h / 2
+        # Front + back
+        meshes.append(make_box(
+            [fp_w, parapet_h, parapet_t],
+            [x_off + fp_cx, par_y, z_off + _b[1]], par_c))
+        meshes.append(make_box(
+            [fp_w, parapet_h, parapet_t],
+            [x_off + fp_cx, par_y, z_off + _b[3]], par_c))
+        # Left + right
+        meshes.append(make_box(
+            [parapet_t, parapet_h, fp_d],
+            [x_off + _b[0], par_y, z_off + fp_cz], par_c))
+        meshes.append(make_box(
+            [parapet_t, parapet_h, fp_d],
+            [x_off + _b[2], par_y, z_off + fp_cz], par_c))
 
     # ── 内部分隔墙（沿 Z 均分，各有一扇门） ─────────────────
     if generate_interior and subdiv > 1:
