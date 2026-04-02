@@ -2929,18 +2929,36 @@ def _assign_buildings_to_lots(building_roles: list,
         bounds = lot["polygon"].bounds  # (minx, minz, maxx, maxz)
 
         # Extra margin for eave overhang, buttresses, base platforms
-        GEO_MARGIN = 1.5
+        # Scale with style: deep eave styles need more, flat-roof styles need less
+        _prof = _gpfs(bstyle) if '_gpfs' in dir() else None
+        if _prof is None:
+            from style_base_profiles import get_profile_for_style as _gpfs
+            _prof = _gpfs(bstyle)
+        eave_val = _prof.get("roof_rules", {}).get("eave_overhang", 0.15) if _prof else 0.15
+        GEO_MARGIN = 0.5 + eave_val * 1.5  # 0.5m base + scaled by eave
 
         # Available area = lot bounds inset by setback + geometry margin
         inset = setback + GEO_MARGIN
         avail_w = (bounds[2] - bounds[0]) - inset * 2
         avail_d = (bounds[3] - bounds[1]) - inset * 2
 
-        # Building size = available * fill_ratio, min 2m
+        # Building size = available * fill_ratio, with min footprint from profile
         max_w = max(2.0, avail_w * fill_ratio)
         max_d = max(2.0, avail_d * fill_ratio)
         w = min(w, max_w)
         d = min(d, max_d)
+
+        # Apply minimum footprint from style profile (prevent overly thin buildings)
+        from style_base_profiles import apply_style_profile as _asp, get_profile_for_style as _gpfs
+        _prof = _gpfs(bstyle)
+        if _prof:
+            _tmp = _asp({"height_range": [3, 6]}, _prof)
+            min_fw = _tmp.get("_min_footprint_w", 0)
+            min_fd = _tmp.get("_min_footprint_d", 0)
+            if min_fw > 0:
+                w = max(w, min(min_fw, avail_w))
+            if min_fd > 0:
+                d = max(d, min(min_fd, avail_d))
 
         yaw = _yaw_toward_road_edge(lot, cx, cz)
         cx += float(rng.uniform(-1.0, 1.0))
@@ -3637,6 +3655,15 @@ def generate_level(
     print(f"  Footprint : {stats['total_footprint_m2']:.1f} m2")
     print(f"  Density   : {stats['total_footprint_m2']/(aw*ad)*100:.1f}%")
     print(f"  Faces     : {n_faces:,}")
+    for bi_info in building_infos:
+        idx = bi_info.get("idx", "?")
+        bw = bi_info["w"]
+        bd = bi_info["d"]
+        bh = bi_info["height"]
+        r = bi_info.get("role", "")
+        sk = bi_info.get("style_key", "")
+        print(f"    B{idx}: {bw:.1f}x{bd:.1f}x{bh:.1f}m ({bw*bd:.0f}m2)"
+              f" role={r} style={sk}")
 
     if layout_type == "organic":
         print(f"  Anchor    : {anchor_style}")

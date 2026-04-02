@@ -91,6 +91,7 @@ STYLE_BASE_PROFILES = {
             "surface_roughness": 0.40,
             "material_variation": 0.06,
         },
+        "group_rules": {"lot_fill_ratio": 0.45, "building_gap_min": 8.0, "building_gap_max": 15.0, "setback_min": 3.0, "setback_max": 6.0, "alignment": "staggered", "lot_width_min": 12.0, "lot_width_max": 22.0, "ambient_frequency": 3},
     },
 
     "japanese_machiya": {
@@ -125,6 +126,7 @@ STYLE_BASE_PROFILES = {
             "surface_roughness": 0.55,
             "material_variation": 0.10,
         },
+        "group_rules": {"lot_fill_ratio": 0.55, "building_gap_min": 5.0, "building_gap_max": 10.0, "setback_min": 2.0, "setback_max": 4.0, "alignment": "irregular", "lot_width_min": 8.0, "lot_width_max": 16.0, "ambient_frequency": 4},
     },
 
     # ─── Medieval ───────────────────────────────────────────────
@@ -208,6 +210,7 @@ STYLE_BASE_PROFILES = {
             "surface_roughness": 0.80,
             "material_variation": 0.10,
         },
+        "group_rules": {"lot_fill_ratio": 0.85, "building_gap_min": 1.5, "building_gap_max": 4.0, "setback_min": 0.5, "setback_max": 2.0, "alignment": "irregular", "lot_width_min": 6.0, "lot_width_max": 14.0, "ambient_frequency": 5},
     },
 
     "medieval_chapel": {
@@ -242,6 +245,7 @@ STYLE_BASE_PROFILES = {
             "surface_roughness": 0.70,
             "material_variation": 0.08,
         },
+        "group_rules": {"lot_fill_ratio": 0.75, "building_gap_min": 2.0, "building_gap_max": 5.0, "setback_min": 1.0, "setback_max": 3.0, "alignment": "irregular", "lot_width_min": 8.0, "lot_width_max": 16.0, "ambient_frequency": 5},
     },
 
     # ─── Industrial ─────────────────────────────────────────────
@@ -325,6 +329,7 @@ STYLE_BASE_PROFILES = {
             "surface_roughness": 0.60,
             "material_variation": 0.12,
         },
+        "group_rules": {"lot_fill_ratio": 0.65, "building_gap_min": 5.0, "building_gap_max": 8.0, "setback_min": 2.0, "setback_max": 3.0, "alignment": "aligned", "lot_width_min": 10.0, "lot_width_max": 14.0, "ambient_frequency": 0},
     },
 
     "industrial_powerplant": {
@@ -359,13 +364,151 @@ STYLE_BASE_PROFILES = {
             "surface_roughness": 0.70,
             "material_variation": 0.08,
         },
+        "group_rules": {"lot_fill_ratio": 0.6, "building_gap_min": 6.0, "building_gap_max": 10.0, "setback_min": 3.0, "setback_max": 5.0, "alignment": "aligned", "lot_width_min": 12.0, "lot_width_max": 18.0, "ambient_frequency": 0},
     },
 
-    # ─── Other families (stubs, can be expanded later) ──────────
-    # "fantasy": { ... },
-    # "horror": { ... },
-    # "modern": { ... },
-    # "desert": { ... },
+    # ─── Modern ─────────────────────────────────────────────────
+    "modern": {
+        "_subdivision_override": 2,
+        "_height_range_override": [5.0, 10.0],
+        "_win_size_override": [1.5, 1.8],
+        "_min_footprint": [8.0, 8.0],
+        "silhouette_rules": {"width_to_height": 1.0, "symmetry": 0.6, "mass_distribution": "clean_geometric"},
+        "roof_rules": {"type": "flat", "pitch": 0.0, "eave_overhang": 0.15, "ridge_decoration": False},
+        "opening_rules": {"shape": "rectangular", "size": "large", "density": 0.55, "rhythm": "regular_grid"},
+        "edge_and_base_rules": {"base_height": 0.1, "corner_quoins": False, "buttress": False, "battlements": False, "pillar_emphasis": False},
+        "material_rules": {"color_palette": {"wall": [0.90, 0.88, 0.85]}, "surface_roughness": 0.15, "material_variation": 0.05},
+        "group_rules": {"lot_fill_ratio": 0.7, "building_gap_min": 4.0, "building_gap_max": 8.0, "setback_min": 1.0, "setback_max": 2.0, "alignment": "aligned", "lot_width_min": 14.0, "lot_width_max": 24.0, "ambient_frequency": 5},
+    },
+
+    "modern_loft": {
+        "_subdivision_override": 2,
+        "_height_range_override": [6.0, 12.0],
+        "_win_size_override": [1.8, 2.2],
+        "_min_footprint": [8.0, 8.0],
+        "silhouette_rules": {"width_to_height": 0.9, "symmetry": 0.5, "mass_distribution": "converted_industrial"},
+        "roof_rules": {"type": "flat", "pitch": 0.0, "eave_overhang": 0.05, "ridge_decoration": False},
+        "opening_rules": {"shape": "rectangular", "size": "large", "density": 0.5, "rhythm": "industrial_grid"},
+        "edge_and_base_rules": {"base_height": 0.15, "corner_quoins": False, "buttress": False, "battlements": False, "pillar_emphasis": False},
+        "material_rules": {"color_palette": {"wall": [0.62, 0.40, 0.30]}, "surface_roughness": 0.5, "material_variation": 0.3},
+        "group_rules": {"lot_fill_ratio": 0.7, "building_gap_min": 3.0, "building_gap_max": 6.0, "setback_min": 1.0, "setback_max": 2.0, "alignment": "aligned", "lot_width_min": 14.0, "lot_width_max": 20.0, "ambient_frequency": 5},
+    },
+
+    "modern_villa": {
+        "_subdivision_override": 1,
+        "_height_range_override": [3.5, 6.0],
+        "_win_size_override": [2.0, 2.5],
+        "_min_footprint": [10.0, 8.0],
+        "silhouette_rules": {"width_to_height": 1.6, "symmetry": 0.3, "mass_distribution": "cantilevered_planes"},
+        "roof_rules": {"type": "flat", "pitch": 0.0, "eave_overhang": 0.4, "ridge_decoration": False},
+        "opening_rules": {"shape": "rectangular", "size": "large", "density": 0.6, "rhythm": "asymmetric_composed"},
+        "edge_and_base_rules": {"base_height": 0.05, "corner_quoins": False, "buttress": False, "battlements": False, "pillar_emphasis": False},
+        "material_rules": {"color_palette": {"wall": [0.93, 0.91, 0.88]}, "surface_roughness": 0.1, "material_variation": 0.05},
+        "group_rules": {"lot_fill_ratio": 0.5, "building_gap_min": 6.0, "building_gap_max": 12.0, "setback_min": 2.0, "setback_max": 4.0, "alignment": "staggered", "lot_width_min": 16.0, "lot_width_max": 28.0, "ambient_frequency": 4},
+    },
+
+    # ─── Fantasy ────────────────────────────────────────────────
+    "fantasy": {
+        "_subdivision_override": 2,
+        "_height_range_override": [6.0, 12.0],
+        "_win_size_override": [0.8, 1.5],
+        "_min_footprint": [6.0, 6.0],
+        "silhouette_rules": {"width_to_height": 0.9, "symmetry": 0.5, "mass_distribution": "ornate_varied"},
+        "roof_rules": {"type": "steep_varied", "pitch": 0.75, "eave_overhang": 0.25, "ridge_decoration": True},
+        "opening_rules": {"shape": "arched", "size": "medium", "density": 0.3, "rhythm": "organic"},
+        "edge_and_base_rules": {"base_height": 0.35, "corner_quoins": True, "buttress": True, "battlements": False, "pillar_emphasis": False},
+        "material_rules": {"color_palette": {"wall": [0.70, 0.65, 0.58]}, "surface_roughness": 0.4, "material_variation": 0.3},
+        "group_rules": {"lot_fill_ratio": 0.7, "building_gap_min": 3.0, "building_gap_max": 8.0, "setback_min": 1.0, "setback_max": 3.0, "alignment": "staggered", "lot_width_min": 12.0, "lot_width_max": 20.0, "ambient_frequency": 4},
+    },
+
+    "fantasy_dungeon": {
+        "_subdivision_override": 1,
+        "_height_range_override": [3.0, 5.0],
+        "_win_size_override": [0.3, 0.5],
+        "_min_footprint": [5.0, 5.0],
+        "silhouette_rules": {"width_to_height": 1.3, "symmetry": 0.3, "mass_distribution": "squat_menacing"},
+        "roof_rules": {"type": "flat_or_barrel_vault", "pitch": 0.15, "eave_overhang": 0.0, "ridge_decoration": False},
+        "opening_rules": {"shape": "arched_low", "size": "minimal", "density": 0.08, "rhythm": "sparse_irregular"},
+        "edge_and_base_rules": {"base_height": 0.5, "corner_quoins": True, "buttress": True, "battlements": False, "pillar_emphasis": False},
+        "material_rules": {"color_palette": {"wall": [0.32, 0.30, 0.28]}, "surface_roughness": 0.85, "material_variation": 0.4},
+        "group_rules": {"lot_fill_ratio": 0.75, "building_gap_min": 2.0, "building_gap_max": 5.0, "setback_min": 1.0, "setback_max": 3.0, "alignment": "irregular", "lot_width_min": 8.0, "lot_width_max": 14.0, "ambient_frequency": 4},
+    },
+
+    "fantasy_palace": {
+        "_subdivision_override": 3,
+        "_height_range_override": [10.0, 18.0],
+        "_win_size_override": [0.9, 2.0],
+        "_min_footprint": [8.0, 8.0],
+        "silhouette_rules": {"width_to_height": 0.7, "symmetry": 0.75, "mass_distribution": "grand_spired"},
+        "roof_rules": {"type": "pointed_spire", "pitch": 0.9, "eave_overhang": 0.2, "ridge_decoration": True},
+        "opening_rules": {"shape": "pointed_arch", "size": "medium_tall", "density": 0.3, "rhythm": "regular_grand"},
+        "edge_and_base_rules": {"base_height": 0.4, "corner_quoins": True, "buttress": True, "battlements": True, "pillar_emphasis": False},
+        "material_rules": {"color_palette": {"wall": [0.85, 0.82, 0.78]}, "surface_roughness": 0.2, "material_variation": 0.15},
+        "group_rules": {"lot_fill_ratio": 0.65, "building_gap_min": 4.0, "building_gap_max": 10.0, "setback_min": 1.5, "setback_max": 3.0, "alignment": "staggered", "lot_width_min": 14.0, "lot_width_max": 24.0, "ambient_frequency": 3},
+    },
+
+    # ─── Horror ─────────────────────────────────────────────────
+    "horror": {
+        "_subdivision_override": 2,
+        "_height_range_override": [5.0, 10.0],
+        "_win_size_override": [0.5, 0.9],
+        "silhouette_rules": {"width_to_height": 0.75, "symmetry": 0.35, "mass_distribution": "gaunt_angular"},
+        "roof_rules": {"type": "steep_broken", "pitch": 0.8, "eave_overhang": 0.2, "ridge_decoration": False},
+        "opening_rules": {"shape": "irregular_gothic", "size": "small", "density": 0.2, "rhythm": "deliberately_off"},
+        "edge_and_base_rules": {"base_height": 0.3, "corner_quoins": True, "buttress": False, "battlements": False, "pillar_emphasis": False},
+        "material_rules": {"color_palette": {"wall": [0.42, 0.38, 0.35]}, "surface_roughness": 0.8, "material_variation": 0.5},
+        "group_rules": {"lot_fill_ratio": 0.6, "building_gap_min": 4.0, "building_gap_max": 10.0, "setback_min": 1.5, "setback_max": 5.0, "alignment": "irregular", "lot_width_min": 8.0, "lot_width_max": 16.0, "ambient_frequency": 3},
+    },
+
+    "horror_asylum": {
+        "_subdivision_override": 2,
+        "_height_range_override": [5.0, 9.0],
+        "_win_size_override": [0.5, 0.7],
+        "silhouette_rules": {"width_to_height": 1.2, "symmetry": 0.7, "mass_distribution": "institutional_oppressive"},
+        "roof_rules": {"type": "hipped_heavy", "pitch": 0.4, "eave_overhang": 0.1, "ridge_decoration": False},
+        "opening_rules": {"shape": "barred_rectangular", "size": "small", "density": 0.25, "rhythm": "oppressive_regular"},
+        "edge_and_base_rules": {"base_height": 0.35, "corner_quoins": True, "buttress": True, "battlements": False, "pillar_emphasis": False},
+        "material_rules": {"color_palette": {"wall": [0.38, 0.30, 0.25]}, "surface_roughness": 0.7, "material_variation": 0.35},
+        "group_rules": {"lot_fill_ratio": 0.7, "building_gap_min": 3.0, "building_gap_max": 6.0, "setback_min": 1.5, "setback_max": 3.0, "alignment": "aligned", "lot_width_min": 10.0, "lot_width_max": 16.0, "ambient_frequency": 5},
+    },
+
+    "horror_crypt": {
+        "_subdivision_override": 1,
+        "_height_range_override": [2.5, 4.0],
+        "_win_size_override": [0.3, 0.4],
+        "silhouette_rules": {"width_to_height": 1.5, "symmetry": 0.4, "mass_distribution": "sunken_heavy"},
+        "roof_rules": {"type": "flat_or_barrel_vault", "pitch": 0.15, "eave_overhang": 0.0, "ridge_decoration": False},
+        "opening_rules": {"shape": "arched_low", "size": "minimal", "density": 0.05, "rhythm": "single_entrance"},
+        "edge_and_base_rules": {"base_height": 0.6, "corner_quoins": True, "buttress": False, "battlements": False, "pillar_emphasis": False},
+        "material_rules": {"color_palette": {"wall": [0.35, 0.33, 0.30]}, "surface_roughness": 0.9, "material_variation": 0.45},
+        "group_rules": {"lot_fill_ratio": 0.7, "building_gap_min": 3.0, "building_gap_max": 8.0, "setback_min": 1.0, "setback_max": 3.0, "alignment": "irregular", "lot_width_min": 8.0, "lot_width_max": 14.0, "ambient_frequency": 4},
+    },
+
+    # ─── Desert ─────────────────────────────────────────────────
+    "desert": {
+        "_subdivision_override": 1,
+        "_height_range_override": [3.0, 5.0],
+        "_win_size_override": [0.4, 0.5],
+        "silhouette_rules": {"width_to_height": 1.3, "symmetry": 0.4, "mass_distribution": "cubic_stepped"},
+        "roof_rules": {"type": "flat", "pitch": 0.0, "eave_overhang": 0.0, "ridge_decoration": False},
+        "opening_rules": {"shape": "arched_small", "size": "small", "density": 0.12, "rhythm": "sparse"},
+        "edge_and_base_rules": {"base_height": 0.1, "corner_quoins": False, "buttress": False, "battlements": False, "pillar_emphasis": False},
+        "material_rules": {"color_palette": {"wall": [0.78, 0.65, 0.48]}, "surface_roughness": 0.6, "material_variation": 0.25},
+        "group_rules": {"lot_fill_ratio": 0.7, "building_gap_min": 2.0, "building_gap_max": 5.0, "setback_min": 0.5, "setback_max": 2.0, "alignment": "irregular", "lot_width_min": 6.0, "lot_width_max": 12.0, "ambient_frequency": 4},
+    },
+
+    "desert_palace": {
+        "_subdivision_override": 2,
+        "_height_range_override": [6.0, 12.0],
+        "_win_size_override": [0.6, 1.5],
+        "_min_footprint": [8.0, 8.0],
+        "silhouette_rules": {"width_to_height": 0.9, "symmetry": 0.8, "mass_distribution": "domed_ornate"},
+        "roof_rules": {"type": "dome", "pitch": 0.6, "eave_overhang": 0.1, "ridge_decoration": True},
+        "opening_rules": {"shape": "horseshoe_arch", "size": "medium_tall", "density": 0.2, "rhythm": "colonnade"},
+        "edge_and_base_rules": {"base_height": 0.3, "corner_quoins": False, "buttress": False, "battlements": True, "pillar_emphasis": True},
+        "material_rules": {"color_palette": {"wall": [0.82, 0.72, 0.58]}, "surface_roughness": 0.3, "material_variation": 0.2},
+        "group_rules": {"lot_fill_ratio": 0.55, "building_gap_min": 5.0, "building_gap_max": 10.0, "setback_min": 2.0, "setback_max": 5.0, "alignment": "staggered", "lot_width_min": 10.0, "lot_width_max": 20.0, "ambient_frequency": 3},
+    },
 }
 
 
@@ -519,6 +662,12 @@ def apply_style_profile(params: dict, profile: dict, role: str = "primary") -> d
     gr = profile.get("group_rules", {})
     for key, val in gr.items():
         result[f"_{key}"] = val
+
+    # ─── Minimum footprint (prevent overly thin buildings) ───
+    min_fp = profile.get("_min_footprint")
+    if min_fp:
+        result["_min_footprint_w"] = min_fp[0]
+        result["_min_footprint_d"] = min_fp[1]
 
     # ─── Role-based inheritance decay ───
     if role == "secondary":
