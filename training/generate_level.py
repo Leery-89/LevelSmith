@@ -709,7 +709,10 @@ def build_roof_coping(footprint, height, floor_t, wall_t, palette, x_off, z_off,
     eave_overhang: 0~1，屋檐向外挑出的比例（相对于 wall_t，max 1.5m）。
     """
     cap_h    = 0.15
-    overhang = eave_overhang * 1.5    # 最大挑出 1.5 m
+    # Scale overhang with building size: eave=0.9 on 10m building → 2.7m overhang
+    fp_bounds = footprint.bounds  # (minx, miny, maxx, maxy)
+    fp_span = max(fp_bounds[2] - fp_bounds[0], fp_bounds[3] - fp_bounds[1])
+    overhang = eave_overhang * fp_span * 0.3
     cap_w    = wall_t + 0.05 + overhang
     y_top    = height + floor_t
 

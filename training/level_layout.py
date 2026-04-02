@@ -2688,15 +2688,25 @@ def generate_lots(area_w: float, area_d: float, layout_type: str,
 
 
 def _subdivide_street_lots(lots: list, area_w: float, area_d: float,
-                           rng) -> list:
+                           rng, group_params: dict = None) -> list:
     """
     Subdivide the two large street-side lots into rhythmic building plots.
-    Lot widths vary (8-18m), setbacks vary (1-4m), ambient slots inserted.
+    group_params can override lot widths, setbacks, fill ratio, ambient frequency,
+    and alignment mode.
     """
     from shapely.geometry import box as shapely_box
+    gp = group_params or {}
+    lot_w_min = gp.get("_lot_width_min", 8.0)
+    lot_w_max = gp.get("_lot_width_max", 18.0)
+    sb_min = gp.get("_setback_min", 1.0)
+    sb_max = gp.get("_setback_max", 4.0)
+    fill = gp.get("_lot_fill_ratio", 0.7)
+    amb_freq = gp.get("_ambient_frequency", 4)
+    alignment = gp.get("_alignment", "irregular")
+
     subdivided = []
 
-    for lot in lots:
+    for lot_side_idx, lot in enumerate(lots):
         poly = lot["polygon"]
         minx, minz, maxx, maxz = poly.bounds
         span_x = maxx - minx
@@ -2709,22 +2719,28 @@ def _subdivide_street_lots(lots: list, area_w: float, area_d: float,
 
         cursor = 0.0
         rhythm_counter = 0
-        ambient_interval = int(rng.integers(3, 6))
+        ambient_interval = max(1, amb_freq) if amb_freq > 0 else 9999
 
         while cursor < span_x - 5:
             rhythm_counter += 1
 
-            if rhythm_counter % ambient_interval == 0 and cursor + 4 < span_x:
+            if amb_freq > 0 and rhythm_counter % ambient_interval == 0 and cursor + 4 < span_x:
                 w = float(rng.uniform(3.0, 5.0))
                 role_hint = "ambient"
                 setback = float(rng.uniform(0.5, 2.0))
                 fill_ratio = float(rng.uniform(0.3, 0.5))
             else:
-                w = float(rng.uniform(8.0, 18.0))
+                w = float(rng.uniform(lot_w_min, lot_w_max))
                 w = min(w, span_x - cursor)
                 role_hint = "standard"
-                setback = float(rng.uniform(1.0, 4.0))
-                fill_ratio = float(rng.uniform(0.5, 0.85))
+                # Alignment mode controls setback
+                if alignment == "aligned":
+                    setback = (sb_min + sb_max) / 2
+                elif alignment == "staggered":
+                    setback = sb_min if rhythm_counter % 2 == 0 else sb_max
+                else:  # irregular
+                    setback = float(rng.uniform(sb_min, sb_max))
+                fill_ratio = fill
 
             if w < 3:
                 break
@@ -3122,10 +3138,19 @@ def _archetype_placement(building_roles: list, spatial_rules: Optional[list],
     """
     # ── Lot-based path (street / grid) ──
     if layout_type in ("street", "grid"):
+        # Gather group_params from style profile
+        from style_base_profiles import apply_style_profile, get_profile_for_style
+        profile = get_profile_for_style(style)
+        group_params = {}
+        if profile:
+            tmp = apply_style_profile({"height_range": [3, 6]}, profile)
+            group_params = {k: v for k, v in tmp.items() if k.startswith("_")}
+
         road_skeleton = generate_road_skeleton(area_w, area_d, layout_type, rng)
         lots = generate_lots(area_w, area_d, layout_type, road_skeleton, 8.0, rng)
         if layout_type == "street":
-            lots = _subdivide_street_lots(lots, area_w, area_d, rng)
+            lots = _subdivide_street_lots(lots, area_w, area_d, rng,
+                                          group_params=group_params)
         else:
             lots = _subdivide_grid_blocks(lots, rng)
         return _assign_buildings_to_lots(
@@ -3362,6 +3387,8 @@ def generate_level(
                          layout_type=layout_type)
 
     # ══ Phase 5: Building meshes ═════════════════════════════════
+    from style_base_profiles import apply_style_profile, get_profile_for_style
+
     scene = trimesh.Scene()
 
     for plan in build_plans:
@@ -3371,6 +3398,25 @@ def generate_level(
         fp_local = plan["fp_local"]
         y_offset = plan["y_offset"]
         bi = plan["bi"]
+
+        # Apply style profile overrides (mesh grammar + material color)
+        build_style = slot.style_key if slot.style_key else style
+        profile = get_profile_for_style(build_style)
+        if profile:
+            bparams = apply_style_profile(bparams, profile)
+
+        # Per-building color variation
+        mat_var = bparams.pop("_material_variation", 0.0)
+        if mat_var > 0 and "wall_color" in bparams:
+            wc = list(bparams["wall_color"])
+            offset = float(rng.uniform(-mat_var * 0.15, mat_var * 0.15))
+            wc[0] = max(0.0, min(1.0, wc[0] + offset))
+            wc[1] = max(0.0, min(1.0, wc[1] + offset))
+            wc[2] = max(0.0, min(1.0, wc[2] + offset + float(rng.uniform(-0.02, 0.02))))
+            bparams["wall_color"] = wc
+
+        # Remove internal keys before passing to build_room
+        bparams.pop("_symmetry_bias", None)
 
         final_yaw = effective_yaw.get(bi, slot.yaw_deg)
 
