@@ -1,0 +1,160 @@
+{
+  "scene": "kaer_morhen",
+  "type": "fortified_compound",
+  "topology": "terraced_axial",
+
+  "nodes": [
+    {
+      "id": "mainkeep",
+      "role": "primary",
+      "mesh_count": 9,
+      "entity_count": 17,
+      "inferred_function": "central_keep",
+      "elevation": "highest",
+      "note": "Composite mega-structure, 9 detail meshes + 17 LOD entities"
+    },
+    {
+      "id": "front_tower_triss",
+      "role": "secondary",
+      "mesh_count": 12,
+      "inferred_function": "residential_tower",
+      "elevation": "mid",
+      "note": "Triss quarters, includes interior furniture (bed, chairs, table)"
+    },
+    {
+      "id": "yenn_tower",
+      "role": "secondary",
+      "mesh_count": 3,
+      "inferred_function": "residential_tower",
+      "elevation": "mid"
+    },
+    {
+      "id": "barbican_tower",
+      "role": "secondary",
+      "mesh_count": 1,
+      "inferred_function": "defensive_tower",
+      "elevation": "low",
+      "note": "Entrance defense"
+    },
+    {
+      "id": "guard_post",
+      "role": "tertiary",
+      "mesh_count": 1,
+      "inferred_function": "guard_post",
+      "elevation": "low"
+    },
+    {
+      "id": "training_ground",
+      "role": "ambient",
+      "mesh_count": 5,
+      "inferred_function": "ciri_training_area",
+      "components": ["training_stand", "swing", "bars"],
+      "elevation": "low"
+    },
+    {
+      "id": "well",
+      "role": "ambient",
+      "mesh_count": 1,
+      "inferred_function": "water_source",
+      "elevation": "low"
+    }
+  ],
+
+  "edges": [
+    {
+      "from": "barbican_tower",
+      "to": "mainkeep",
+      "type": "approach_axis",
+      "note": "Main approach from barbican through courtyards to keep"
+    },
+    {
+      "from": "mainkeep",
+      "to": "front_tower_triss",
+      "type": "adjacent",
+      "note": "Tower connected to main keep"
+    },
+    {
+      "from": "mainkeep",
+      "to": "yenn_tower",
+      "type": "adjacent"
+    },
+    {
+      "from": "barbican_tower",
+      "to": "guard_post",
+      "type": "flanking"
+    },
+    {
+      "from": "training_ground",
+      "to": "mainkeep",
+      "type": "within_courtyard"
+    },
+    {
+      "from": "well",
+      "to": "mainkeep",
+      "type": "within_courtyard"
+    }
+  ],
+
+  "enclosure": {
+    "wall_segments": 24,
+    "battlement_variants": 9,
+    "gate_count": 5,
+    "gate_types": ["main_gate", "garden_gate", "wooden_gate", "destroyed_gate"],
+    "bridge_count": 5,
+    "stair_count": 5,
+    "note": "Multiple wall segments suggest multi-level compound with connecting bridges"
+  },
+
+  "damage_distribution": {
+    "debris_meshes": 12,
+    "damaged_variants": "columns, walls have damaged versions",
+    "crashed_floor": true,
+    "rubble": true,
+    "note": "Post-battle state: significant structural damage, especially floors and walls"
+  },
+
+  "interior_zones": {
+    "triss_room": {
+      "furniture": ["bed", "chairs", "table", "carafe", "hourglass"],
+      "note": "Only tower with detailed interior"
+    },
+    "jail": {
+      "components": ["bars", "chain"],
+      "note": "Dungeon/prison area"
+    }
+  },
+
+  "archetype_hierarchy": {
+    "primary": {
+      "type": "mainkeep",
+      "mesh_complexity": "highest",
+      "evidence": "9 detail meshes + 17 entity proxies = most detailed structure"
+    },
+    "secondary": [
+      {"type": "residential_tower", "count": 2, "evidence": "Triss (12 meshes) + Yenn (3 meshes)"},
+      {"type": "defensive_tower", "count": 1, "evidence": "Barbican tower at entrance"}
+    ],
+    "tertiary": [
+      {"type": "guard_post", "count": 1},
+      {"type": "stair_structure", "count": 5},
+      {"type": "bridge_structure", "count": 5}
+    ],
+    "ambient": [
+      {"type": "training_ground", "count": 1, "components": 5},
+      {"type": "well", "count": 1},
+      {"type": "fireplace", "count": 1}
+    ]
+  },
+
+  "layout_priors": {
+    "primary_position": "highest_elevation_center",
+    "secondary_position": "adjacent_to_primary",
+    "defensive_position": "perimeter_and_entrance",
+    "ambient_position": "courtyard_and_open_spaces",
+    "wall_follows": "perimeter_with_towers_at_corners",
+    "gates_at": "approach_axis_and_secondary_entrances",
+    "bridges_connect": "different_elevation_levels",
+    "damage_concentration": "walls_and_floors",
+    "elevation_gradient": "low_at_entrance_high_at_keep"
+  }
+}

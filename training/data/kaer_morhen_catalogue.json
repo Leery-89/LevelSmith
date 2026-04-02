@@ -1,0 +1,305 @@
+{
+  "source": "W3 REDkit Depot",
+  "depot_paths": [
+    "D:/W3Depot/environment/architecture/human/kaer_morhen/",
+    "D:/W3Depot/dlc/bob/data/environment/terrain_surroundings/"
+  ],
+  "total_meshes": 212,
+  "components": {
+    "battlements": [
+      "kaer_morhen_exterior_battlements_1",
+      "kaer_morhen_exterior_battlements_2",
+      "kaer_morhen_exterior_battlements_3",
+      "kaer_morhen_exterior_battlements_4",
+      "kaer_morhen_exterior_battlements_corner",
+      "kaer_morhen_exterior_battlements_cover",
+      "kaer_morhen_exterior_battlements_good",
+      "kaer_morhen_exterior_battlements_round",
+      "kaer_morhen_exterior_battlements_round01"
+    ],
+    "bridges": [
+      "kaer_morhen_wooden_bridge_chain",
+      "kaer_morhen_wooden_bridge_handrail",
+      "kaer_morhen_wooden_bridge_passage",
+      "kaer_morhen_wooden_bridge_stand",
+      "kaer_morhen_wooden_bridge_top"
+    ],
+    "columns": [
+      "kaer_morhen_column",
+      "kaer_morhen_column_damaged",
+      "kaer_morhen_column_damaged_more",
+      "kaer_morhen_column_round",
+      "kaer_morhen_column_round_damaged",
+      "kaer_morhen_column_round_damaged_more",
+      "kaer_morhen_column_round_damaged_piece",
+      "kaer_morhen_column_square"
+    ],
+    "debris_damage": [
+      "kaer_morhen_bars_damaged",
+      "kaer_morhen_debris",
+      "kaer_morhen_debris_corner",
+      "kaer_morhen_debris_round",
+      "kaer_morhen_debris_straight_mediumtones",
+      "kaer_morhen_fake_rubble",
+      "kaer_morhen_jail_bars_damaged",
+      "kaer_morhen_rubble",
+      "kaer_morhen_wood_pole_damaged",
+      "kaer_morhen_wooden_pile_long",
+      "kaer_morhen_woods_longpile",
+      "kaer_morhen_woods_shortpile"
+    ],
+    "doors": [
+      "kaer_morhen_stonedoor",
+      "kaer_morhen_wooden_door_interior",
+      "kaer_morhen_wooden_door_l",
+      "kaer_morhen_wooden_door_pile",
+      "kaer_morhen_wooden_door_r",
+      "kaer_morhen_wooden_door_small",
+      "kaer_morhen_wooden_door_small_pile"
+    ],
+    "entity_proxies": [
+      "kaer_morhen_entity_10_proxy",
+      "kaer_morhen_entity_11_proxy",
+      "kaer_morhen_entity_12_proxy",
+      "kaer_morhen_entity_13_proxy",
+      "kaer_morhen_entity_15_proxy",
+      "kaer_morhen_entity_16_proxy",
+      "kaer_morhen_entity_17_proxy",
+      "kaer_morhen_entity_1_proxy",
+      "kaer_morhen_entity_3_proxy",
+      "kaer_morhen_entity_4_proxy",
+      "kaer_morhen_entity_5_proxy",
+      "kaer_morhen_entity_6_proxy",
+      "kaer_morhen_entity_7_proxy",
+      "kaer_morhen_entity_8_proxy",
+      "kaer_morhen_entity_9_proxy",
+      "kaer_morhen_entity_gate_destroyed_proxy",
+      "kaer_morhen_entity_gate_proxy"
+    ],
+    "environment": [
+      "kaer_morhen_big_rock",
+      "kaer_morhen_river",
+      "kaer_morhen_rock_addons",
+      "kaer_morhen_trees_proxy_1",
+      "kaer_morhen_water",
+      "sand_kaer_morhen_big_rock",
+      "sand_kaer_morhen_big_rock_copy"
+    ],
+    "floors": [
+      "kaer_morhen_crashed_floor",
+      "kaer_morhen_crashed_floor_onetex",
+      "kaer_morhen_exterior_cokol",
+      "kaer_morhen_interior_floor",
+      "kaer_morhen_interior_floor_standard"
+    ],
+    "gates": [
+      "bob_kaer_morhen_garden_gate",
+      "bob_kaer_morhen_gate",
+      "kaer_morhen_garden_gate",
+      "kaer_morhen_gate",
+      "kaer_morhen_wooden_gate"
+    ],
+    "interior_arches": [
+      "kaer_morhen_interior_arch_big",
+      "kaer_morhen_interior_arch_med_a",
+      "kaer_morhen_interior_arch_med_b",
+      "kaer_morhen_interior_arch_small_a",
+      "kaer_morhen_interior_arch_small_b",
+      "kaer_morhen_interior_arch_unique",
+      "kaer_morhen_interior_vault"
+    ],
+    "interior_details": [
+      "kaer_morhen_interior_chimney",
+      "kaer_morhen_interior_details_center",
+      "kaer_morhen_interior_details_side",
+      "kaer_morhen_interior_details_wood_planks",
+      "kaer_morhen_interior_shadow",
+      "kaer_morhen_interior_volume",
+      "kaer_morhen_interior_wooden_scaffolding",
+      "kaer_morhen_interior_wooden_scaffolding_short",
+      "kaer_morhen_interior_wooden_scaffolding_short_no_rails",
+      "kaer_morhen_interior_wooden_scaffolding_square"
+    ],
+    "interior_furniture": [
+      "kaer_morhen_triss_interior_bed",
+      "kaer_morhen_triss_interior_carafe",
+      "kaer_morhen_triss_interior_chair",
+      "kaer_morhen_triss_interior_chair_add",
+      "kaer_morhen_triss_interior_chair_low",
+      "kaer_morhen_triss_interior_chair_low_add",
+      "kaer_morhen_triss_interior_chair_low_b",
+      "kaer_morhen_triss_interior_hourglass",
+      "kaer_morhen_triss_interior_plateau",
+      "kaer_morhen_triss_interior_pot",
+      "kaer_morhen_triss_interior_screen",
+      "kaer_morhen_triss_interior_screen_pile",
+      "kaer_morhen_triss_interior_table"
+    ],
+    "mainkeep_details": [
+      "kaer_morhen_mainkeep_detail_01",
+      "kaer_morhen_mainkeep_detail_02",
+      "kaer_morhen_mainkeep_detail_03",
+      "kaer_morhen_mainkeep_detail_04",
+      "kaer_morhen_mainkeep_detail_05",
+      "kaer_morhen_mainkeep_detail_06",
+      "kaer_morhen_mainkeep_detail_ledge_01",
+      "kaer_morhen_mainkeep_detail_ledge_02",
+      "kaer_morhen_mainkeep_detail_ledge_03"
+    ],
+    "platforms": [
+      "kaer_morhen_wooden_platform",
+      "kaer_morhen_wooden_platform_handrail",
+      "kaer_morhen_wooden_platform_handrail_broken",
+      "kaer_morhen_wooden_platform_long",
+      "kaer_morhen_wooden_stand"
+    ],
+    "props": [
+      "kaer_morhen_bars",
+      "kaer_morhen_chain_long_hanging",
+      "kaer_morhen_ciri_training_pend",
+      "kaer_morhen_ciri_training_pend_detached",
+      "kaer_morhen_ciri_training_pend_rigid",
+      "kaer_morhen_ciri_training_pend_ring",
+      "kaer_morhen_ciri_training_stand",
+      "kaer_morhen_fireplace",
+      "kaer_morhen_guard_post",
+      "kaer_morhen_jail_bars",
+      "kaer_morhen_jail_volume",
+      "kaer_morhen_metal_eye",
+      "kaer_morhen_stove",
+      "kaer_morhen_swing",
+      "kaer_morhen_swing_rope",
+      "kaer_morhen_toilet",
+      "kaer_morhen_toilet_no_volume",
+      "kaer_morhen_well",
+      "kaer_morhen_wood_pole",
+      "q403_item_kaer_morhen_map"
+    ],
+    "roofs": [
+      "kaer_morhen_interior_roof_big",
+      "kaer_morhen_interior_roof_med",
+      "kaer_morhen_interior_roof_small"
+    ],
+    "stairs": [
+      "kaer_morhen_exterior_stairs",
+      "kaer_morhen_exterior_stairs_short",
+      "kaer_morhen_stairs",
+      "kaer_morhen_under_door_stairs",
+      "kaer_morhen_wide_stairs"
+    ],
+    "towers": [
+      "kaer_morhen_barbican_tower",
+      "kaer_morhen_exterior_stairs_tower_big",
+      "kaer_morhen_exterior_stairs_tower_middle",
+      "kaer_morhen_exterior_stairs_tower_small",
+      "kaer_morhen_exterior_tower_stairs",
+      "kaer_morhen_front_tower_triss_balcony",
+      "kaer_morhen_front_tower_triss_f2_pillars",
+      "kaer_morhen_front_tower_triss_f2_walls",
+      "kaer_morhen_front_tower_triss_f2_walls_blackbox",
+      "kaer_morhen_front_tower_triss_pillars",
+      "kaer_morhen_front_tower_triss_stairs_arches",
+      "kaer_morhen_front_tower_triss_stairs_pillars",
+      "kaer_morhen_front_tower_triss_stairs_steps",
+      "kaer_morhen_front_tower_triss_stairs_steps_2",
+      "kaer_morhen_front_tower_triss_stairs_walls",
+      "kaer_morhen_front_tower_triss_steps",
+      "kaer_morhen_front_tower_triss_walls",
+      "kaer_morhen_rock_tower",
+      "kaer_morhen_tower_details",
+      "kaer_morhen_tower_details1",
+      "kaer_morhen_tower_floor",
+      "kaer_morhen_tower_roof",
+      "kaer_morhen_tower_roof1",
+      "kaer_morhen_tower_roof_door",
+      "kaer_morhen_tower_stairs_1",
+      "kaer_morhen_tower_stairs_2",
+      "kaer_morhen_tower_wall",
+      "kaer_morhen_tower_wall1",
+      "kaer_morhen_tower_window_fullheight",
+      "kaer_morhen_tower_windowspecial",
+      "kaer_morhen_woods_towerroof",
+      "kaer_morhen_woods_towerroof_dameged",
+      "kaer_morhen_woods_towerroof_dameged_more",
+      "kaer_morhen_yenn_tower_wooden_frame_window",
+      "kaer_morhen_yenn_tower_wooden_framework",
+      "kaer_morhen_yenn_tower_wooden_framework_lower"
+    ],
+    "unclassified": [
+      "kaer_morhen_fake_interior"
+    ],
+    "walls": [
+      "kaer_morhen_bricks",
+      "kaer_morhen_bricks_damaged",
+      "kaer_morhen_exterior_bricks_angle",
+      "kaer_morhen_exterior_bricks_angle_test",
+      "kaer_morhen_exterior_bricks_long",
+      "kaer_morhen_exterior_bricks_lose",
+      "kaer_morhen_exterior_bricks_lose_another",
+      "kaer_morhen_exterior_bricks_short",
+      "kaer_morhen_exterior_bricks_short_angle",
+      "kaer_morhen_exterior_bricks_short_angle_grey",
+      "kaer_morhen_exterior_brickwall_angle",
+      "kaer_morhen_exterior_brickwall_long",
+      "kaer_morhen_exterior_brickwall_short",
+      "kaer_morhen_exterior_brickwall_short_angle",
+      "kaer_morhen_exterior_wall_cracked",
+      "kaer_morhen_exterior_wall_cracked_weathered_light",
+      "kaer_morhen_exterior_wall_pillar",
+      "kaer_morhen_exterior_wall_pillar_damaged",
+      "kaer_morhen_exterior_wall_pillar_damaged_weathered_light",
+      "kaer_morhen_exterior_wall_pillar_weathered_light",
+      "kaer_morhen_exterior_wall_test_weathered_light",
+      "kaer_morhen_interior_painted_walls",
+      "kaer_morhen_interior_walls",
+      "kaer_morhen_wall_block"
+    ],
+    "windows": [
+      "kaer_morhen_cross_window",
+      "kaer_morhen_small_window",
+      "kaer_morhen_window_big_lesslight",
+      "kaer_morhen_window_big_twosided"
+    ]
+  },
+  "inferred_archetype": {
+    "primary": {
+      "role": "central_keep",
+      "evidence": "mainkeep_detail x9, entity_proxy x17",
+      "component_types": [
+        "mainkeep_details",
+        "entity_proxies",
+        "towers"
+      ]
+    },
+    "secondary": [
+      {
+        "role": "front_tower",
+        "evidence": "front_tower_triss_* (Triss quarters)"
+      },
+      {
+        "role": "yenn_tower",
+        "evidence": "yenn_tower_* (Yennefer quarters)"
+      },
+      {
+        "role": "barbican_tower",
+        "evidence": "barbican_tower (gatehouse)"
+      },
+      {
+        "role": "guard_post",
+        "evidence": "guard_post"
+      }
+    ],
+    "infrastructure": {
+      "walls": 24,
+      "battlements": 9,
+      "gates": 5,
+      "bridges": 5,
+      "stairs": 5
+    },
+    "ambient": [
+      "well",
+      "training_ground (ciri)",
+      "fireplace"
+    ]
+  }
+}
