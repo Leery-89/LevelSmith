@@ -3399,11 +3399,12 @@ def generate_level(
         y_offset = plan["y_offset"]
         bi = plan["bi"]
 
-        # Apply style profile overrides (mesh grammar + material color)
+        # Apply style profile overrides (mesh grammar + material color + role decay)
         build_style = slot.style_key if slot.style_key else style
         profile = get_profile_for_style(build_style)
         if profile:
-            bparams = apply_style_profile(bparams, profile)
+            bparams = apply_style_profile(bparams, profile,
+                                          role=slot.role or "primary")
 
         # Per-building color variation
         mat_var = bparams.pop("_material_variation", 0.0)

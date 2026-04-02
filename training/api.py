@@ -393,6 +393,8 @@ def run_generation(zones: list, min_gap: float, seed: int,
             "depth": round(b.get("d", 0), 2),
             "cluster_id": b.get("cluster_id", -1),
             "is_main": b.get("is_main_building", False),
+            "role": b.get("role", ""),
+            "style_key": b.get("style_key", ""),
         })
 
     road_out = {

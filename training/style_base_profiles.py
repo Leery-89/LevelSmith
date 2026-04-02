@@ -389,7 +389,7 @@ _WINDOW_SHAPE_MAP = {
 }
 
 
-def apply_style_profile(params: dict, profile: dict) -> dict:
+def apply_style_profile(params: dict, profile: dict, role: str = "primary") -> dict:
     """
     Override geometry-related params using a style base profile.
     Only touches mesh-grammar parameters. No materials, no aging.
@@ -519,6 +519,39 @@ def apply_style_profile(params: dict, profile: dict) -> dict:
     gr = profile.get("group_rules", {})
     for key, val in gr.items():
         result[f"_{key}"] = val
+
+    # ─── Role-based inheritance decay ───
+    if role == "secondary":
+        result["column_count"] = max(0, result.get("column_count", 0) - 1)
+        result["has_battlements"] = 0
+        result["height_range"][0] *= 0.8
+        result["height_range"][1] *= 0.85
+        if "win_spec" in result:
+            wd = result["win_spec"].get("density", 0.2)
+            result["win_spec"]["density"] = round(min(0.4, wd * 1.3), 3)
+
+    elif role == "tertiary":
+        result["column_count"] = 0
+        result["has_battlements"] = 0
+        result["has_arch"] = 0
+        result["height_range"][0] *= 0.6
+        result["height_range"][1] *= 0.65
+        result["eave_overhang"] = round(result.get("eave_overhang", 0) * 0.7, 3)
+        result["wall_thickness"] = round(result.get("wall_thickness", 0.3) * 0.8, 2)
+        if "win_spec" in result:
+            wd = result["win_spec"].get("density", 0.2)
+            result["win_spec"]["density"] = round(min(0.35, wd * 1.5), 3)
+
+    elif role == "ambient":
+        result["column_count"] = 0
+        result["has_battlements"] = 0
+        result["has_arch"] = 0
+        result["height_range"][0] *= 0.4
+        result["height_range"][1] *= 0.45
+        result["eave_overhang"] = round(result.get("eave_overhang", 0) * 0.5, 3)
+        if "win_spec" in result:
+            result["win_spec"]["density"] = 0.05
+        result["subdivision"] = 1
 
     return result
 
