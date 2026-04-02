@@ -2565,16 +2565,15 @@ def orient_doors_organic(building_infos, clusters, rng=None, **_kw):
 # ─── 道路骨架 + 地块系统 ────────────────────────────────────────────
 
 def generate_road_skeleton(area_w: float, area_d: float,
-                           layout_type: str, rng) -> list:
+                           layout_type: str, rng,
+                           building_count: int = 8) -> list:
     """
     Generate road center-lines + widths BEFORE building placement.
     Returns list of {"points": [[x,z],...], "width": float, "type": str}.
     Only street and grid produce skeletons here; organic/random/plaza
     generate roads post-placement (unchanged).
     """
-    from shapely.geometry import box as shapely_box
     segments = []
-    inset = 2.0  # wall inset
 
     if layout_type == "street":
         road_z = area_d / 2
@@ -2586,17 +2585,17 @@ def generate_road_skeleton(area_w: float, area_d: float,
         })
 
     elif layout_type == "grid":
-        n_x = max(2, round(area_w / 35))
-        n_z = max(2, round(area_d / 35))
+        # Grid cells = n_div x n_div, need >= building_count
+        n_div = max(2, math.ceil(math.sqrt(building_count)))
         road_w = 6.0
-        for i in range(1, n_x):
-            rx = area_w * i / n_x
+        for i in range(1, n_div):
+            rx = area_w * i / n_div
             segments.append({
                 "points": [[rx, -1], [rx, area_d + 1]],
                 "width": road_w, "type": "main",
             })
-        for j in range(1, n_z):
-            rz = area_d * j / n_z
+        for j in range(1, n_div):
+            rz = area_d * j / n_div
             segments.append({
                 "points": [[-1, rz], [area_w + 1, rz]],
                 "width": road_w, "type": "main",
@@ -2765,36 +2764,65 @@ def _subdivide_street_lots(lots: list, area_w: float, area_d: float,
     return subdivided
 
 
-def _subdivide_grid_blocks(lots: list, rng) -> list:
-    """Subdivide large grid blocks into 2-4 building plots."""
+def _subdivide_grid_blocks(lots: list, rng,
+                           target_building_count: int = 8) -> list:
+    """
+    Subdivide grid blocks to produce enough lots for all buildings.
+    Each lot holds exactly one building — never double-assign.
+    """
     from shapely.geometry import box as shapely_box
+
+    # If we already have enough lots, don't subdivide
+    if len(lots) >= target_building_count:
+        return lots
+
+    # Sort by area descending — split the largest first
+    lots_by_area = sorted(enumerate(lots), key=lambda x: x[1]["area"], reverse=True)
     subdivided = []
 
-    for lot in lots:
-        if lot["area"] > 400:
+    for _orig_idx, lot in lots_by_area:
+        if len(subdivided) >= target_building_count:
+            subdivided.append(lot)
+            continue
+
+        if lot["area"] > 80:
             poly = lot["polygon"]
             minx, minz, maxx, maxz = poly.bounds
-            mid_x = (minx + maxx) / 2 + float(rng.uniform(-3, 3))
-            mid_z = (minz + maxz) / 2 + float(rng.uniform(-3, 3))
-            quarters = [
-                shapely_box(minx, minz, mid_x, mid_z),
-                shapely_box(mid_x, minz, maxx, mid_z),
-                shapely_box(minx, mid_z, mid_x, maxz),
-                shapely_box(mid_x, mid_z, maxx, maxz),
-            ]
-            for q in quarters:
+            mid_x = (minx + maxx) / 2 + float(rng.uniform(-2, 2))
+            mid_z = (minz + maxz) / 2 + float(rng.uniform(-2, 2))
+
+            if lot["area"] > 300:
+                # Large block → split into 4
+                parts = [
+                    shapely_box(minx, minz, mid_x, mid_z),
+                    shapely_box(mid_x, minz, maxx, mid_z),
+                    shapely_box(minx, mid_z, mid_x, maxz),
+                    shapely_box(mid_x, mid_z, maxx, maxz),
+                ]
+            else:
+                # Medium block → split into 2 along longer axis
+                if (maxx - minx) > (maxz - minz):
+                    parts = [shapely_box(minx, minz, mid_x, maxz),
+                             shapely_box(mid_x, minz, maxx, maxz)]
+                else:
+                    parts = [shapely_box(minx, minz, maxx, mid_z),
+                             shapely_box(minx, mid_z, maxx, maxz)]
+
+            for q in parts:
                 qc = q.intersection(poly)
-                if qc.area > 20:
-                    cx, cz = qc.centroid.x, qc.centroid.y
+                if qc.area > 25:
                     subdivided.append({
-                        "polygon": qc, "centroid": (cx, cz), "area": qc.area,
+                        "polygon": qc,
+                        "centroid": (qc.centroid.x, qc.centroid.y),
+                        "area": qc.area,
                         "road_edges": lot["road_edges"],
-                        "setback": float(rng.uniform(1.5, 3.5)),
-                        "fill_ratio": float(rng.uniform(0.5, 0.8)),
+                        "setback": float(rng.uniform(1.5, 3.0)),
+                        "fill_ratio": float(rng.uniform(0.5, 0.75)),
                         "role_hint": "standard",
                     })
         else:
             subdivided.append(lot)
+
     return subdivided
 
 
@@ -2897,18 +2925,34 @@ def _assign_buildings_to_lots(building_roles: list,
         lot = lots[lot_idx]
         cx, cz = lot["centroid"]
         fill_ratio = lot.get("fill_ratio", 0.7)
+        setback = lot.get("setback", 2.0)
         bounds = lot["polygon"].bounds  # (minx, minz, maxx, maxz)
-        max_w = (bounds[2] - bounds[0]) * fill_ratio
-        max_d = (bounds[3] - bounds[1]) * fill_ratio
-        w = min(w, max(5.0, max_w))
-        d = min(d, max(5.0, max_d))
+
+        # Extra margin for eave overhang, buttresses, base platforms
+        GEO_MARGIN = 1.5
+
+        # Available area = lot bounds inset by setback + geometry margin
+        inset = setback + GEO_MARGIN
+        avail_w = (bounds[2] - bounds[0]) - inset * 2
+        avail_d = (bounds[3] - bounds[1]) - inset * 2
+
+        # Building size = available * fill_ratio, min 2m
+        max_w = max(2.0, avail_w * fill_ratio)
+        max_d = max(2.0, avail_d * fill_ratio)
+        w = min(w, max_w)
+        d = min(d, max_d)
 
         yaw = _yaw_toward_road_edge(lot, cx, cz)
-        cx += float(rng.uniform(-1.5, 1.5))
-        cz += float(rng.uniform(-1.5, 1.5))
-        # Clamp to lot interior
-        cx = max(bounds[0] + w / 2 + 1, min(bounds[2] - w / 2 - 1, cx))
-        cz = max(bounds[1] + d / 2 + 1, min(bounds[3] - d / 2 - 1, cz))
+        cx += float(rng.uniform(-1.0, 1.0))
+        cz += float(rng.uniform(-1.0, 1.0))
+
+        # Clamp center so building + geometry margin stays inside lot
+        safe_minx = bounds[0] + inset + w / 2
+        safe_maxx = bounds[2] - inset - w / 2
+        safe_minz = bounds[1] + inset + d / 2
+        safe_maxz = bounds[3] - inset - d / 2
+        cx = max(safe_minx, min(safe_maxx, cx))
+        cz = max(safe_minz, min(safe_maxz, cz))
 
         yaw += float(rng.uniform(-8.0, 8.0))
         fp = _pick_footprint_type(variation, rng)
@@ -3146,15 +3190,26 @@ def _archetype_placement(building_roles: list, spatial_rules: Optional[list],
             tmp = apply_style_profile({"height_range": [3, 6]}, profile)
             group_params = {k: v for k, v in tmp.items() if k.startswith("_")}
 
-        road_skeleton = generate_road_skeleton(area_w, area_d, layout_type, rng)
+        actual_count = sum(b.get("count", 1) for b in building_roles)
+        road_skeleton = generate_road_skeleton(area_w, area_d, layout_type, rng,
+                                               building_count=actual_count)
+
+        # Store grid info so orient_doors_grid / generate_road_network find it
+        if layout_type == "grid":
+            n_div = max(2, math.ceil(math.sqrt(actual_count)))
+            layout_grid._cell_w = area_w / n_div
+            layout_grid._cell_d = area_d / n_div
+            layout_grid._cols = n_div
+            layout_grid._rows = n_div
+
         lots = generate_lots(area_w, area_d, layout_type, road_skeleton, 8.0, rng)
         if layout_type == "street":
             lots = _subdivide_street_lots(lots, area_w, area_d, rng,
                                           group_params=group_params)
-        else:
-            lots = _subdivide_grid_blocks(lots, rng)
-        return _assign_buildings_to_lots(
+        # grid: use raw lots directly — one cell = one building, no subdivision
+        slots = _assign_buildings_to_lots(
             building_roles, spatial_rules, lots, style, variation, rng)
+        return slots, road_skeleton
 
     # ── Original phased path (organic / random / plaza) ──
     expanded = _expand_building_roles(building_roles)
@@ -3226,7 +3281,67 @@ def _archetype_placement(building_roles: list, spatial_rules: Optional[list],
                 slot.x_off + slot.w / 2, slot.z_off + slot.d / 2,
                 slot.w, slot.d, 0.0))
 
-    return slots
+    return slots, None  # no skeleton for organic/random/plaza
+
+
+def _skeleton_to_road_graph(skeleton: list, area_w: float, area_d: float,
+                            style: str) -> "RoadGraph":
+    """Convert a road_skeleton to a RoadGraph for Phase 3/6 mesh generation."""
+    graph = RoadGraph()
+    _inset = 2.0
+
+    # Build intersection nodes at all crossing points
+    h_lines = []  # (z, width)
+    v_lines = []  # (x, width)
+    for seg in skeleton:
+        p0, p1 = seg["points"][0], seg["points"][-1]
+        w = seg.get("width", 6.0)
+        if abs(p0[1] - p1[1]) < 0.1:  # horizontal
+            h_lines.append((p0[1], w))
+        else:  # vertical
+            v_lines.append((p0[0], w))
+
+    # Collect all unique x and z positions (edges + intersections)
+    x_positions = sorted(set([_inset, area_w - _inset] + [v[0] for v in v_lines]))
+    z_positions = sorted(set([_inset, area_d - _inset] + [h[1] for h in h_lines]
+                             if h_lines else [_inset, area_d - _inset]))
+    # Fix: use h_line z values
+    z_positions = sorted(set([_inset, area_d - _inset] + [h[0] for h in h_lines]))
+
+    # Create grid of nodes
+    node_map = {}
+    for xi, x in enumerate(x_positions):
+        for zi, z in enumerate(z_positions):
+            x_c = max(_inset, min(area_w - _inset, x))
+            z_c = max(_inset, min(area_d - _inset, z))
+            nid = graph.add_node(x_c, z_c, "intersection")
+            node_map[(xi, zi)] = nid
+
+    # Connect adjacent nodes with edges
+    for xi in range(len(x_positions)):
+        for zi in range(len(z_positions)):
+            nid = node_map[(xi, zi)]
+            # Horizontal edge (along x)
+            if xi + 1 < len(x_positions):
+                # Check if this z aligns with a horizontal road or is an edge
+                z_val = z_positions[zi]
+                edge_w = 3.5  # default
+                for hz, hw in h_lines:
+                    if abs(z_val - hz) < 0.5:
+                        edge_w = hw * 0.6  # rendered width < skeleton width
+                        break
+                graph.add_edge(nid, node_map[(xi + 1, zi)], "main", edge_w)
+            # Vertical edge (along z)
+            if zi + 1 < len(z_positions):
+                x_val = x_positions[xi]
+                edge_w = 3.5
+                for vx, vw in v_lines:
+                    if abs(x_val - vx) < 0.5:
+                        edge_w = vw * 0.6
+                        break
+                graph.add_edge(nid, node_map[(xi, zi + 1)], "main", edge_w)
+
+    return graph
 
 
 # ─── 主生成器（Phase 0-7 cluster pipeline）───────────────────────
@@ -3296,11 +3411,13 @@ def generate_level(
             f"未知布局类型: {layout_type}，可选: grid/street/plaza/random/organic")
 
     # ══ Phase 1: Layout → slots ══════════════════════════════════
+    _road_skeleton = None
     if building_roles:
         # Archetype-driven phased placement
-        slots = _archetype_placement(
+        result = _archetype_placement(
             building_roles, spatial_rules, aw, ad, style, variation, rng,
             layout_type=layout_type)
+        slots, _road_skeleton = result
         print(f"  [archetype] placed {len(slots)} buildings "
               f"(roles: {[s.role for s in slots]})")
     else:
@@ -3359,8 +3476,12 @@ def generate_level(
     print(f"  Main buildings: {main_idxs}")
 
     # ══ Phase 3: Road network (cluster-based) ════════════════════
-    road_graph = generate_road_network(
-        clusters, building_infos, aw, ad, layout_type, style)
+    if _road_skeleton:
+        # Use skeleton coordinates (matches lot boundaries exactly)
+        road_graph = _skeleton_to_road_graph(_road_skeleton, aw, ad, style)
+    else:
+        road_graph = generate_road_network(
+            clusters, building_infos, aw, ad, layout_type, style)
     n_road = len([nd for nd in road_graph.nodes
                   if nd.ntype in ("road", "intersection", "endpoint")])
     n_acc = len([e for e in road_graph.edges if e.road_type == "access"])
