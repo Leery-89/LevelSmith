@@ -13,6 +13,9 @@ import math
 import numpy as np
 from pathlib import Path
 
+# New modular geometry system
+from geometry import materials, layout, utils
+
 try:
     import trimesh
 except ImportError:
@@ -29,69 +32,28 @@ except ImportError:
     from shapely.geometry import Polygon, box as shapely_box, LineString
     from shapely.affinity import translate as shapely_translate
 
-# ─── 布局常量 ──────────────────────────────────────────────────
-ROOM_W = 12.0   # 房间宽度 (X 轴)
-ROOM_D =  8.0   # 房间深度 (Z 轴)
-GAP    =  4.0   # 房间间距
+# ─── 布局常量 (migrated to geometry.materials) ────────────────
+# ROOM_W, ROOM_D, GAP, STYLES moved to geometry.materials
+# PALETTES moved to geometry.materials.STYLE_PALETTES
+# BASELINE_PARAMS moved to geometry.materials.BASELINE_PARAMS
 
-STYLES = ["medieval", "modern", "industrial"]
-
-# ─── 颜色方案 (RGBA uint8) ────────────────────────────────────
-PALETTES = {
-    "medieval": {
-        "floor":    [115,  95,  75, 255],
-        "ceiling":  [135, 115,  90, 255],
-        "wall":     [162, 146, 122, 255],
-        "door":     [ 88,  58,  28, 255],
-        "window":   [155, 195, 215, 180],
-        "internal": [148, 133, 110, 255],
-        "ground":   [ 90,  80,  65, 255],
-    },
-    "modern": {
-        "floor":    [215, 215, 215, 255],
-        "ceiling":  [242, 242, 242, 255],
-        "wall":     [198, 198, 198, 255],
-        "door":     [ 68,  68,  68, 255],
-        "window":   [135, 195, 228, 180],
-        "internal": [182, 182, 182, 255],
-        "ground":   [160, 160, 155, 255],
-    },
-    "industrial": {
-        "floor":    [ 72,  72,  68, 255],
-        "ceiling":  [ 52,  52,  48, 255],
-        "wall":     [ 92,  88,  82, 255],
-        "door":     [158,  82,  38, 255],
-        "window":   [112, 138, 112, 180],
-        "internal": [ 82,  78,  72, 255],
-        "ground":   [ 55,  55,  52, 255],
-    },
-    "baseline": {
-        "floor":    [172, 158, 142, 255],
-        "ceiling":  [192, 182, 172, 255],
-        "wall":     [182, 172, 162, 255],
-        "door":     [ 98,  78,  58, 255],
-        "window":   [148, 175, 200, 180],
-        "internal": [168, 160, 152, 255],
-        "ground":   [135, 128, 118, 255],
-    },
-}
-
-# ─── 默认参数 (baseline) ──────────────────────────────────────
-BASELINE_PARAMS = {
-    "height_range":    [2.5, 3.5],
-    "wall_thickness":  0.30,
-    "floor_thickness": 0.15,
-    "door_spec":       {"width": 0.90, "height": 2.10},
-    "win_spec":        {"width": 1.20, "height": 1.20, "density": 0.40},
-    "subdivision":     2,
-}
+# Import from new modules for backward compatibility
+ROOM_W = materials.ROOM_W
+ROOM_D = materials.ROOM_D
+GAP = materials.GAP
+STYLES = materials.STYLES
+PALETTES = materials.STYLE_PALETTES
+BASELINE_PARAMS = materials.BASELINE_PARAMS
 
 
 # ─── 平面轮廓工厂 ──────────────────────────────────────────────
 
+# Footprint functions migrated to geometry.layout module
+# Use layout.make_rect_footprint(), layout.make_l_footprint(), layout.make_u_footprint()
+
 def make_rect_footprint(w=ROOM_W, d=ROOM_D):
     """矩形平面轮廓（原始矩形，用于向后兼容）"""
-    return shapely_box(0, 0, w, d)
+    return layout.make_rect_footprint(w, d)
 
 
 def make_l_footprint(w=ROOM_W, d=ROOM_D, cut_frac_x=0.45, cut_frac_z=0.45):
@@ -100,9 +62,7 @@ def make_l_footprint(w=ROOM_W, d=ROOM_D, cut_frac_x=0.45, cut_frac_z=0.45):
     cut_frac_x: 切去部分占宽度的比例
     cut_frac_z: 切去部分占深度的比例
     """
-    rect = shapely_box(0, 0, w, d)
-    cut  = shapely_box(w * (1 - cut_frac_x), d * (1 - cut_frac_z), w, d)
-    return rect.difference(cut)
+    return layout.make_l_footprint(w, d, cut_frac_x, cut_frac_z)
 
 
 def make_u_footprint(w=ROOM_W, d=ROOM_D, notch_frac_x=0.4, notch_frac_z=0.55):
@@ -111,11 +71,7 @@ def make_u_footprint(w=ROOM_W, d=ROOM_D, notch_frac_x=0.4, notch_frac_z=0.55):
     notch_frac_x: 缺口占宽度的比例（居中）
     notch_frac_z: 缺口占深度的比例（从前沿切入）
     """
-    rect = shapely_box(0, 0, w, d)
-    nx0  = w * (0.5 - notch_frac_x / 2)
-    nx1  = w * (0.5 + notch_frac_x / 2)
-    cut  = shapely_box(nx0, 0, nx1, d * notch_frac_z)
-    return rect.difference(cut)
+    return layout.make_u_footprint(w, d, notch_frac_x, notch_frac_z)
 
 
 # ─── 几何工具 ─────────────────────────────────────────────────
