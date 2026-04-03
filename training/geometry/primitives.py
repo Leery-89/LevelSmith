@@ -245,6 +245,74 @@ def create_window(wall_segment, width, height, material_color, style="baseline")
     raise NotImplementedError("To be migrated from generate_level.py")
 
 
+def place_windows_x(wall_len, height, win_w, win_h, density, subdiv, sill=0.9):
+    """
+    Place windows on X-direction wall.
+    
+    Args:
+        wall_len: Wall length
+        height: Wall height
+        win_w: Window width
+        win_h: Window height
+        density: Window density factor
+        subdiv: Subdivision factor
+        sill: Window sill height
+    
+    Returns:
+        List of window opening dictionaries
+    
+    Note: Migrated from generate_level.py place_windows_x function
+    """
+    if density <= 0.0:
+        return []
+    n = max(1, round(density * subdiv))
+    n = min(n, max(1, int(wall_len / (win_w + 0.5))))
+    gap = max(0.35, (wall_len - n * win_w) / (n + 1))
+    result, x = [], gap
+    for _ in range(n):
+        if x + win_w > wall_len - 0.15:
+            break
+        h_actual = min(win_h, height - sill - 0.1)
+        if h_actual > 0.1:
+            result.append({"x": x, "w": win_w, "y": sill, "h": h_actual})
+        x += win_w + gap
+    return result
+
+
+def place_windows_z(wall_dep, height, win_w, win_h, density, subdiv, sill=0.9):
+    """
+    Place windows on Z-direction wall (adjusted density).
+    
+    Args:
+        wall_dep: Wall depth
+        height: Wall height
+        win_w: Window width
+        win_h: Window height
+        density: Window density factor
+        subdiv: Subdivision factor
+        sill: Window sill height
+    
+    Returns:
+        List of window opening dictionaries
+    
+    Note: Migrated from generate_level.py place_windows_z function
+    """
+    if density <= 0.0:
+        return []
+    n = max(1, round(density * subdiv * 0.7))
+    n = min(n, max(1, int(wall_dep / (win_w + 0.5))))
+    gap = max(0.35, (wall_dep - n * win_w) / (n + 1))
+    result, z = [], gap
+    for _ in range(n):
+        if z + win_w > wall_dep - 0.15:
+            break
+        h_actual = min(win_h, height - sill - 0.1)
+        if h_actual > 0.1:
+            result.append({"z": z, "w": win_w, "y": sill, "h": h_actual})
+        z += win_w + gap
+    return result
+
+
 def place_windows_on_wall(wall_segment, window_count, window_width, window_height, 
                           material_color, style="baseline"):
     """
@@ -262,7 +330,7 @@ def place_windows_on_wall(wall_segment, window_count, window_width, window_heigh
         List of window meshes
     """
     # This is a placeholder - actual implementation will be migrated
-    # from place_windows_edge, place_windows_x, place_windows_z functions
+    # from place_windows_edge function
     raise NotImplementedError("To be migrated from generate_level.py")
 
 

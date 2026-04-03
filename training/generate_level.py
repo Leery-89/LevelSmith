@@ -303,39 +303,21 @@ def build_edge_wall(p0, p1, height, wall_t, openings, color, x_off, z_off):
 # ─── 窗户布置 ──────────────────────────────────────────────────
 
 def place_windows_x(wall_len, height, win_w, win_h, density, subdiv, sill=0.9):
-    """沿 X 方向墙体计算窗户开口列表"""
-    if density <= 0.0:
-        return []
-    n = max(1, round(density * subdiv))
-    n = min(n, max(1, int(wall_len / (win_w + 0.5))))
-    gap = max(0.35, (wall_len - n * win_w) / (n + 1))
-    result, x = [], gap
-    for _ in range(n):
-        if x + win_w > wall_len - 0.15:
-            break
-        h_actual = min(win_h, height - sill - 0.1)
-        if h_actual > 0.1:
-            result.append({"x": x, "w": win_w, "y": sill, "h": h_actual})
-        x += win_w + gap
-    return result
+    """沿 X 方向墙体计算窗户开口列表
+    
+    Note: Function migrated to geometry.primitives.place_windows_x
+    """
+    from geometry import primitives
+    return primitives.place_windows_x(wall_len, height, win_w, win_h, density, subdiv, sill)
 
 
 def place_windows_z(wall_dep, height, win_w, win_h, density, subdiv, sill=0.9):
-    """沿 Z 方向墙体计算窗户开口列表（密度打七折）"""
-    if density <= 0.0:
-        return []
-    n = max(1, round(density * subdiv * 0.7))
-    n = min(n, max(1, int(wall_dep / (win_w + 0.5))))
-    gap = max(0.35, (wall_dep - n * win_w) / (n + 1))
-    result, z = [], gap
-    for _ in range(n):
-        if z + win_w > wall_dep - 0.15:
-            break
-        h_actual = min(win_h, height - sill - 0.1)
-        if h_actual > 0.1:
-            result.append({"z": z, "w": win_w, "y": sill, "h": h_actual})
-        z += win_w + gap
-    return result
+    """沿 Z 方向墙体计算窗户开口列表（密度打七折）
+    
+    Note: Function migrated to geometry.primitives.place_windows_z
+    """
+    from geometry import primitives
+    return primitives.place_windows_z(wall_dep, height, win_w, win_h, density, subdiv, sill)
 
 
 def place_windows_edge(edge_len, height, win_w, win_h, density, subdiv, sill=0.9):
