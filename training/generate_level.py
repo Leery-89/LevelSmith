@@ -138,45 +138,22 @@ def _boolean_wall(solid, openings_list, color):
     从完整墙体 solid 中用布尔运算减去所有开口。
     返回单个 mesh（无接缝、法线连续）。
     openings_list: [trimesh.Trimesh, ...] 每个是贯穿墙体的 box
+    
+    Note: Function migrated to geometry.primitives._boolean_wall
     """
-    result = solid
-    for hole in openings_list:
-        try:
-            result = trimesh.boolean.difference([result, hole], engine='manifold')
-        except Exception:
-            pass   # 布尔失败则跳过该开口，保留实墙
-    trimesh.repair.fix_normals(result)
-    c = np.array(color, dtype=np.uint8)
-    result.visual.face_colors = np.tile(c, (len(result.faces), 1))
-    return result
+    from geometry import primitives
+    return primitives._boolean_wall(solid, openings_list, color)
 
 
 def build_x_wall(total_w, height, thickness, openings, color, wx, wz):
     """
     沿 X 方向的墙体（前/后墙）。
     用布尔运算从完整墙体中减去门窗开口 → 无接缝，法线连续。
+    
+    Note: Function migrated to geometry.primitives.build_x_wall
     """
-    # 完整实墙
-    solid = trimesh.creation.box(extents=[total_w, height, thickness])
-    solid.apply_translation([wx + total_w / 2, height / 2, wz])
-
-    # 开口切割体（比墙厚 × 2 确保贯穿）
-    holes = []
-    for op in openings:
-        y0 = max(0.0, op.get("y", 0.0))
-        h  = op.get("h", height)
-        w  = op.get("w", 1.0)
-        x  = op.get("x", 0.0)
-        hole = trimesh.creation.box(extents=[w, h, thickness * 2])
-        hole.apply_translation([wx + x + w / 2, y0 + h / 2, wz])
-        holes.append(hole)
-
-    if not holes:
-        c = np.array(color, dtype=np.uint8)
-        solid.visual.face_colors = np.tile(c, (len(solid.faces), 1))
-        return [solid]
-
-    return [_boolean_wall(solid, holes, color)]
+    from geometry import primitives
+    return primitives.build_x_wall(total_w, height, thickness, openings, color, wx, wz)
 
 
 def _x_wall_reveals(openings, thickness, wall_color, wx, wz, wall_height):
@@ -211,26 +188,11 @@ def build_z_wall(total_d, height, thickness, openings_z, color, wx, wz):
     """
     沿 Z 方向的墙体（左/右墙）。
     布尔运算：完整实墙 - 窗口开口。
+    
+    Note: Function migrated to geometry.primitives.build_z_wall
     """
-    solid = trimesh.creation.box(extents=[thickness, height, total_d])
-    solid.apply_translation([wx, height / 2, wz + total_d / 2])
-
-    holes = []
-    for op in openings_z:
-        y0 = max(0.0, op.get("y", 0.0))
-        h  = op.get("h", height)
-        w  = op.get("w", 1.0)
-        z  = op.get("z", 0.0)
-        hole = trimesh.creation.box(extents=[thickness * 2, h, w])
-        hole.apply_translation([wx, y0 + h / 2, wz + z + w / 2])
-        holes.append(hole)
-
-    if not holes:
-        c = np.array(color, dtype=np.uint8)
-        solid.visual.face_colors = np.tile(c, (len(solid.faces), 1))
-        return [solid]
-
-    return [_boolean_wall(solid, holes, color)]
+    from geometry import primitives
+    return primitives.build_z_wall(total_d, height, thickness, openings_z, color, wx, wz)
 
 
 def _z_wall_reveals(openings_z, thickness, wall_color, wx, wz, wall_height):

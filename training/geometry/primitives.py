@@ -58,6 +58,113 @@ def create_wall_with_opening(segment, opening_type, opening_params, material_col
     raise NotImplementedError("To be migrated from generate_level.py")
 
 
+def _boolean_wall(solid, openings_list, color):
+    """
+    Boolean subtract openings from a solid wall.
+    Creates a wall mesh (with openings removed).
+    
+    Args:
+        solid: Base wall trimesh.Trimesh object
+        openings_list: List of trimesh.Trimesh opening boxes
+        color: RGBA color array
+    
+    Returns:
+        trimesh.Trimesh with openings cut out
+    
+    Note: Migrated from generate_level.py _boolean_wall function
+    """
+    result = solid
+    for hole in openings_list:
+        try:
+            result = trimesh.boolean.difference([result, hole], engine='manifold')
+        except Exception:
+            pass  # Skip failed boolean operations, keep original
+    trimesh.repair.fix_normals(result)
+    c = np.array(color, dtype=np.uint8)
+    result.visual.face_colors = np.tile(c, (len(result.faces), 1))
+    return result
+
+
+def build_x_wall(total_w, height, thickness, openings, color, wx, wz):
+    """
+    Build a wall along the X direction (front/back wall).
+    Uses boolean operations to subtract door/window openings from complete wall → no seams, continuous normals.
+    
+    Args:
+        total_w: Total wall width
+        height: Wall height
+        thickness: Wall thickness
+        openings: List of opening dictionaries with x, w, h, y keys
+        color: RGBA color array
+        wx, wz: Wall position coordinates
+    
+    Returns:
+        List of trimesh.Trimesh objects
+    
+    Note: Migrated from generate_level.py build_x_wall function
+    """
+    # Complete solid wall
+    solid = trimesh.creation.box(extents=[total_w, height, thickness])
+    solid.apply_translation([wx + total_w / 2, height / 2, wz])
+
+    # Opening cutting bodies (2x wall thickness to ensure penetration)
+    holes = []
+    for op in openings:
+        y0 = max(0.0, op.get("y", 0.0))
+        h  = op.get("h", height)
+        w  = op.get("w", 1.0)
+        x  = op.get("x", 0.0)
+        hole = trimesh.creation.box(extents=[w, h, thickness * 2])
+        hole.apply_translation([wx + x + w / 2, y0 + h / 2, wz])
+        holes.append(hole)
+
+    if not holes:
+        c = np.array(color, dtype=np.uint8)
+        solid.visual.face_colors = np.tile(c, (len(solid.faces), 1))
+        return [solid]
+
+    return [_boolean_wall(solid, holes, color)]
+
+
+def build_z_wall(total_d, height, thickness, openings_z, color, wx, wz):
+    """
+    Build a wall along the Z direction (left/right wall).
+    Boolean operations: complete solid wall - window openings.
+    
+    Args:
+        total_d: Total wall depth
+        height: Wall height
+        thickness: Wall thickness
+        openings_z: List of opening dictionaries with z, w, h, y keys
+        color: RGBA color array
+        wx, wz: Wall position coordinates
+    
+    Returns:
+        List of trimesh.Trimesh objects
+    
+    Note: Migrated from generate_level.py build_z_wall function
+    """
+    solid = trimesh.creation.box(extents=[thickness, height, total_d])
+    solid.apply_translation([wx, height / 2, wz + total_d / 2])
+
+    holes = []
+    for op in openings_z:
+        y0 = max(0.0, op.get("y", 0.0))
+        h  = op.get("h", height)
+        w  = op.get("w", 1.0)
+        z  = op.get("z", 0.0)
+        hole = trimesh.creation.box(extents=[thickness * 2, h, w])
+        hole.apply_translation([wx, y0 + h / 2, wz + z + w / 2])
+        holes.append(hole)
+
+    if not holes:
+        c = np.array(color, dtype=np.uint8)
+        solid.visual.face_colors = np.tile(c, (len(solid.faces), 1))
+        return [solid]
+
+    return [_boolean_wall(solid, holes, color)]
+
+
 def build_polygon_walls(polygon, height, thickness, material_color, style="baseline"):
     """
     Build walls around a polygon footprint.
