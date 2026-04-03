@@ -80,18 +80,11 @@ def make_box(size, center, color):
     """创建带颜色的 box mesh。
     只有 extents >= 0.05 的维度才做 round(3) 对齐。
     避免对薄板（门/窗）的微小维度做舍入导致退化。
+    
+    Note: Function migrated to geometry.primitives.create_box
     """
-    extents = np.array(size, dtype=np.float64)
-    center  = np.array(center, dtype=np.float64)
-    b = trimesh.creation.box(extents=extents)
-    b.apply_translation(center)
-    # 只对 >=0.05 的维度做 round(3) → 消除墙段接缝，不伤薄板
-    for ax in range(3):
-        if extents[ax] >= 0.05:
-            b.vertices[:, ax] = np.round(b.vertices[:, ax], 3)
-    c = np.array(color, dtype=np.uint8)
-    b.visual.face_colors = np.tile(c, (len(b.faces), 1))
-    return b
+    from geometry import primitives
+    return primitives.create_box(size, center, color)
 
 
 def make_extruded_polygon(polygon, height, color):
@@ -101,14 +94,11 @@ def make_extruded_polygon(polygon, height, color):
     extrude_polygon 在 XY 平面画轮廓，沿 Z 拉伸。
     旋转 +90° 绕 X 轴：shapely XY → 世界 XZ，拉伸 Z → 世界 -Y。
     旋转后 mesh 顶面在 Y=0，底面在 Y=-height。
+    
+    Note: Function migrated to geometry.primitives.create_extruded_polygon
     """
-    mesh = trimesh.creation.extrude_polygon(polygon, height)
-    # +90° 绕 X：new_Y = -old_Z, new_Z = old_Y
-    rot = trimesh.transformations.rotation_matrix(math.pi / 2, [1, 0, 0])
-    mesh.apply_transform(rot)
-    c = np.array(color, dtype=np.uint8)
-    mesh.visual.face_colors = np.tile(c, (len(mesh.faces), 1))
-    return mesh
+    from geometry import primitives
+    return primitives.create_extruded_polygon(polygon, height, color)
 
 
 def _r3(v):

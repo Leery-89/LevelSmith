@@ -270,40 +270,62 @@ def build_battlements(wall_top_positions, height, width, material_color, style="
 # Basic Geometric Primitives
 # ============================================================================
 
-def create_box(width, height, depth, material_color, center=(0, 0, 0)):
+def create_box(size, center, color):
     """
     Create a box (cuboid) primitive.
     
     Args:
-        width: X dimension
-        height: Y dimension
-        depth: Z dimension
-        material_color: RGBA color
-        center: Center position of the box
+        size: [width, height, depth] dimensions
+        center: [x, y, z] center position
+        color: RGBA color array
     
     Returns:
         trimesh.Trimesh object
+    
+    Note:
+        Migrated from generate_level.py make_box function.
+        Only dimensions >= 0.05 are rounded to 3 decimal places.
+        This avoids degeneration of thin panels (doors/windows).
     """
-    # This is a placeholder - actual implementation will be migrated
-    # from make_box function (16 lines)
-    raise NotImplementedError("To be migrated from generate_level.py")
+    extents = np.array(size, dtype=np.float64)
+    center_pos = np.array(center, dtype=np.float64)
+    b = trimesh.creation.box(extents=extents)
+    b.apply_translation(center_pos)
+    # Only round dimensions >= 0.05 to eliminate wall joint gaps without damaging thin panels
+    for ax in range(3):
+        if extents[ax] >= 0.05:
+            b.vertices[:, ax] = np.round(b.vertices[:, ax], 3)
+    c = np.array(color, dtype=np.uint8)
+    b.visual.face_colors = np.tile(c, (len(b.faces), 1))
+    return b
 
 
-def create_extruded_polygon(polygon, height, material_color):
+def create_extruded_polygon(polygon, height, color):
     """
     Create a mesh by extruding a 2D polygon.
     
     Args:
         polygon: Shapely Polygon
         height: Extrusion height
-        material_color: RGBA color
+        color: RGBA color array
     
     Returns:
         trimesh.Trimesh object
+    
+    Note:
+        Migrated from generate_level.py make_extruded_polygon function.
+        Output coordinate system: X=right, Y=up, Z=front (depth).
+        extrude_polygon draws outline in XY plane, extrudes along Z.
+        Rotated +90° around X axis: shapely XY → world XZ, extrude Z → world -Y.
+        After rotation mesh top is at Y=0, bottom at Y=-height.
     """
-    # This is a placeholder - actual implementation will be migrated
-    # from make_extruded_polygon function (15 lines)
-    raise NotImplementedError("To be migrated from generate_level.py")
+    mesh = trimesh.creation.extrude_polygon(polygon, height)
+    # +90° around X: new_Y = -old_Z, new_Z = old_Y
+    rot = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
+    mesh.apply_transform(rot)
+    c = np.array(color, dtype=np.uint8)
+    mesh.visual.face_colors = np.tile(c, (len(mesh.faces), 1))
+    return mesh
 
 
 # ============================================================================
