@@ -294,51 +294,216 @@ levelsmith/
 
 ## Quick start
 
+> **30-second start**
+> ```bash
+> git clone https://github.com/Leery-89/LevelSmith.git
+> cd LevelSmith/training
+> pip install -r requirements.txt
+> python -m uvicorn api:app --port 8000
+> ```
+> Open **http://localhost:8000** → type a prompt → click **Generate**.
+
 ### Prerequisites
 
-Python 3.10+, PyTorch, trimesh, shapely, FastAPI.
+- **Python 3.10+** (tested on 3.11)
+- **OS**: Windows 10/11, Linux, macOS
+- **GPU** (optional): CUDA-compatible GPU for training; CPU works for generation
 
-### Installation
+### Step 1 — Clone and install
 
 ```bash
 git clone https://github.com/Leery-89/LevelSmith.git
-cd levelsmith/training
+cd LevelSmith
 
-pip install torch trimesh shapely fastapi uvicorn python-dotenv
+# Create a virtual environment (recommended)
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# Linux / macOS
+source .venv/bin/activate
+
+# Install dependencies
+cd training
+pip install -r requirements.txt
 ```
 
-### Configuration
+> **Note on PyTorch**: The default `pip install` may install CPU-only PyTorch. For GPU acceleration, visit [pytorch.org](https://pytorch.org/get-started/locally/) and run the platform-specific command **before** `pip install -r requirements.txt`.
+
+### Step 2 — Configure LLM (optional)
 
 Create a `.env` file in `training/` for LLM-powered prompt parsing:
 
-```
-DEEPSEEK_API_KEY=sk-your-key-here
+```bash
+echo "DEEPSEEK_API_KEY=sk-your-key-here" > .env
 ```
 
-Without an API key, the system falls back to regex-based keyword matching — all geometry features still work, but the archetype agent (building role assignment, spatial relationships, atmosphere) is bypassed.
+| With API key | Without API key |
+|---|---|
+| Full archetype agent (building roles, spatial rules, atmosphere) | Regex keyword matching (still functional) |
+| Rich multi-building scene plans | Basic style + layout detection |
 
-### Run the web interface
+All geometry, layout, and export features work without an API key.
+
+### Step 3 — Run the web interface
 
 ```bash
-cd training
+# From the training/ directory
 python -m uvicorn api:app --host 0.0.0.0 --port 8000
 ```
 
-Open `http://localhost:8000` in your browser.
+Open `http://localhost:8000` in your browser. Type a prompt and click **Generate**.
+
+### Step 4 — Try these sample prompts
+
+| Prompt | Expected result |
+|--------|----------------|
+| `medieval village with church and market` | Organic layout, 8-12 buildings, stone walls, arched windows |
+| `japanese temple complex` | Organic layout, curved eaves, hip roofs, courtyard feel |
+| `modern city block` | Grid layout, flat roofs, large windows, clean geometry |
+| `desert palace with walls` | Plaza layout, dome roofs, thick walls, enclosure with gates |
+| `horror asylum` | Random layout, dense detail, dark palette, high complexity |
+| `industrial factory district` | Grid layout, simple geometry, high simple_ratio |
 
 ### Generate from command line
 
 ```python
+# Run from the training/ directory
 from level_layout import generate_level
 
-scene = generate_level(
-    style="medieval_keep",
-    layout_type="organic",
-    building_count=10,
-    seed=42
-)
+# Basic usage
+scene = generate_level(style="medieval_keep", layout_type="organic",
+                       building_count=10, seed=42)
 scene.export("output.glb")
+
+# With custom area size
+scene = generate_level(style="japanese_temple", layout_type="plaza",
+                       building_count=6, area_size=80.0, seed=123)
+scene.export("temple_complex.glb")
 ```
+
+Available parameters for `generate_level()`:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `style` | (required) | One of 20 style keys (e.g. `medieval`, `japanese_temple`) |
+| `layout_type` | `"street"` | `street` / `grid` / `plaza` / `organic` / `random` |
+| `building_count` | `10` | Number of buildings to generate |
+| `area_size` | `100.0` | Scene area in meters (square) |
+| `variation` | `0.4` | Style variation amount (0.0 = exact base, 1.0 = max variation) |
+| `seed` | `42` | Random seed for reproducibility |
+
+### Viewing generated files
+
+- **Web UI**: 3D preview is built in (Three.js)
+- **Desktop**: Open `.glb` files in [Blender](https://www.blender.org/), Windows 3D Viewer, or any glTF viewer
+- **UE5**: Import `.glb` or convert to `.fbx` with `python glb_to_fbx.py`
+
+### Run tests
+
+```bash
+cd training
+python -m pytest tests/ -v
+```
+
+---
+
+## Demo
+
+> Generate a complete 3D building layout from a single text prompt — preview in the browser, download as GLB/FBX for Blender or UE5.
+
+### Web UI
+
+The built-in web interface provides real-time 3D preview with Three.js:
+
+```
+http://localhost:8000
+```
+
+- Type a natural language prompt (e.g. "medieval village with church and market")
+- Select style and layout from dropdowns, or leave as "Auto"
+- Click **Generate** to produce a 3D scene
+- Orbit, zoom, and pan the 3D preview
+- Download as GLB or FBX for use in Blender / UE5
+
+<p align="center">
+  <em>Web UI: prompt input on the left, 3D preview (Three.js) on the right, archetype plan sidebar below</em>
+</p>
+
+### Prompt-to-3D examples
+
+Each row shows a text prompt processed through the full pipeline (archetype planning → distribution → style model → geometry + road network → export).
+
+| Style | Layout | Prompt | Key features |
+|-------|--------|--------|-------------|
+| `medieval` | organic | *"medieval village with church"* | Stone walls, arched windows, organic road curves, enclosure walls with auto-aligned gates |
+| `medieval_keep` | organic | *"fortified keep with barracks"* | Battlements, thick walls, phased placement (keep → barracks → ambient) |
+| `modern_loft` | street | *"modern street with shops"* | Flat roofs, large windows, lot-based placement with street rhythm variation |
+| `japanese_temple` | plaza | *"japanese temple complex"* | Curved eaves, hip roofs, ring road around central temple |
+| `desert_palace` | plaza | *"desert palace with walls"* | Dome roofs, thick walls, plaza with enclosure and road-aligned gates |
+| `horror_crypt` | random | *"abandoned asylum grounds"* | Dense detail, high mesh complexity, random road skeleton |
+| `industrial` | grid | *"factory district"* | Simple geometry, orthogonal grid, ≤4 buildings per block |
+| `fantasy_palace` | plaza | *"elven palace with gardens"* | Ornate columns, arched doors, varied roof types |
+
+### Command-line quick demo
+
+```bash
+cd training
+python -c "
+from level_layout import generate_level
+scene = generate_level(style='medieval', layout_type='organic', building_count=8, seed=42)
+scene.export('demo_medieval.glb')
+print('Exported demo_medieval.glb')
+"
+```
+
+### Pipeline stages
+
+For any prompt, the system produces intermediate artifacts at each stage:
+
+```
+User prompt
+  → Archetype plan    (JSON: building roster, roles, spatial rules)
+  → Distribution plan (coordinates, zones, clusters, orientations)
+  → Style parameters  (23-dim vector per building from trained MLP)
+  → Geometry          (CSG boolean: walls, doors, windows, roofs)
+  → Road network      (cluster-based, with gate alignment)
+  → Export            (GLB + optional FBX)
+```
+
+### What the output looks like
+
+Each generated scene includes:
+- **Buildings** with style-appropriate geometry (roof shape, windows, doors, columns, battlements)
+- **Road network** connecting building clusters, with correct door orientation
+- **Enclosure walls** (for applicable styles) with gates auto-aligned to roads
+- **Ambient elements** (wells, market stalls) filling gaps in the layout
+
+| Output | Format | Typical size |
+|--------|--------|-------------|
+| 3D scene | `.glb` (glTF binary) | 200 KB – 2 MB |
+| UE5 import | `.fbx` (via `glb_to_fbx.py`) | 300 KB – 3 MB |
+| Archetype plan | JSON (in API response) | ~2 KB |
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `ModuleNotFoundError: No module named 'trimesh'` | Run `pip install -r requirements.txt` from the `training/` directory. Make sure your virtual environment is activated. |
+| `ModuleNotFoundError: No module named 'manifold3d'` | `pip install manifold3d>=3.0.0`. On some platforms you may need to install from source. |
+| PyTorch is CPU-only (slow training) | Visit [pytorch.org](https://pytorch.org/get-started/locally/) for your CUDA-specific install command. |
+| `archetype_plan` is `null` in API response | Create a `.env` file with `DEEPSEEK_API_KEY=sk-...` in `training/`. Without the key, the system falls back to regex parsing (still works, but simpler plans). |
+| Web UI shows blank 3D viewport | Check browser console for errors. Ensure you're using a modern browser with WebGL support. |
+| `Address already in use` on port 8000 | Another process is using port 8000. Use `--port 8001` or stop the existing process. |
+| Generated GLB file won't open in Blender | Ensure Blender 3.0+. Use **File → Import → glTF 2.0** (not drag-and-drop). |
+
+### Debugging tips
+
+- **Debug mode**: Set `DEBUG=1` in `.env` to enable verbose logging of agent plans and fallback reasons.
+- **Seed control**: Same `seed` + same parameters = identical output. Use this for reproducible debugging.
+- **Regex fallback**: Look for `[FALLBACK]` in console output to confirm LLM fallback is active.
+- **Intermediate artifacts**: The `/generate` endpoint returns `archetype_plan` in its JSON response — inspect it to see the LLM's building roster and spatial rules.
 
 ---
 

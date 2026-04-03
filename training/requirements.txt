@@ -5,14 +5,19 @@ trimesh>=4.0.0
 shapely>=2.0.0
 scipy>=1.10.0
 manifold3d>=3.0.0
+Pillow>=9.0.0
 
-# ── Web Agent ──
+# ── Web server ──
 fastapi>=0.100.0
 uvicorn>=0.20.0
 python-multipart>=0.0.6
+python-dotenv>=1.0.0
 
 # ── LLM prompt parsing (optional, falls back to regex) ──
 openai>=1.0.0
+
+# ── Text encoder (optional, for ML layout model) ──
+sentence-transformers>=2.2.0
 
 # ── Training data extraction (optional) ──
 lxml>=4.9.0
@@ -22,3 +27,6 @@ lxml>=4.9.0
 psutil>=5.9.0
 onnx>=1.14.0
 onnxruntime-directml>=1.16.0   # Windows DirectML; or onnxruntime for CPU-only
+
+# ── Testing (optional) ──
+pytest>=7.0.0

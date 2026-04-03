@@ -1,11 +1,76 @@
+# ── Environment & secrets ──
 .env
+.env.*
+
+# ── Python ──
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+
+# ── Generated 3D assets (regenerable via scripts) ──
 *.glb
 *.fbx
+
+# ── Model weights (download or retrain) ──
 *.pt
+*.pth
 *.onnx
+
+# ── Generated JSON artifacts ──
+training/finetuned_*_style_params.json
+training/finetuned_*_model.pt
+training/finetuned_style_params.json
+training/trained_style_params.json
+training/train_history.json
+training/comparison_report.json
+training/text_encoder_demo.json
+
+# ── Temp & report files ──
+training/test.txt
+training/mesh_complexity_status.md
+*.log
+
+# ── Runtime output directories ──
 outputs/
 generated/
+
+# ── Training data & artifacts ──
+training/cache/
+training/data/
+training/VGLC/
+training/.claude/
+training/training_data/
+training/validation_data/
+training/training_logs/
+training/results/
+training/models/
+
+# ── IDE & OS ──
 .DS_Store
 Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Jupyter ──
+.ipynb_checkpoints/
+
+# ── Python tools & testing ──
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# ── Package ──
+*.whl

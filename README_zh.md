@@ -244,49 +244,107 @@ flowchart LR
 
 ### 前置条件
 
-Python 3.10+, PyTorch, trimesh, shapely, FastAPI。
+- **Python 3.10+**（已在 3.11 上测试）
+- **操作系统**: Windows 10/11, Linux, macOS
+- **GPU**（可选）: CUDA 兼容 GPU 用于训练；生成可在 CPU 上运行
 
-### 安装
+### 第一步 — 克隆与安装
 
 ```bash
 git clone https://github.com/Leery-89/LevelSmith.git
-cd levelsmith/training
+cd LevelSmith
 
-pip install torch trimesh shapely fastapi uvicorn python-dotenv
+# 创建虚拟环境（推荐）
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# Linux / macOS
+source .venv/bin/activate
+
+# 安装依赖
+cd training
+pip install -r requirements.txt
 ```
 
-### 配置
+> **PyTorch 注意事项**: 默认 `pip install` 可能安装 CPU 版本的 PyTorch。如需 GPU 加速，请先访问 [pytorch.org](https://pytorch.org/get-started/locally/) 获取对应平台的安装命令。
 
-在 `training/` 目录创建 `.env` 文件以启用 LLM 驱动的提示词解析：
+### 第二步 — 配置 LLM（可选）
 
-```
-DEEPSEEK_API_KEY=sk-你的key
-```
-
-没有 API key 时，系统降级为正则关键词匹配——所有几何功能仍然可用，但 archetype agent（建筑角色分配、空间关系、氛围）将被跳过。
-
-### 启动 Web 界面
+在 `training/` 目录创建 `.env` 文件：
 
 ```bash
-cd training
+echo "DEEPSEEK_API_KEY=sk-你的key" > .env
+```
+
+| 有 API key | 无 API key |
+|---|---|
+| 完整 archetype agent（建筑角色、空间关系、氛围） | 正则关键词匹配（功能仍可用） |
+| 丰富的多建筑场景规划 | 基础风格 + 布局检测 |
+
+没有 API key 时，所有几何、布局和导出功能仍然正常工作。
+
+### 第三步 — 启动 Web 界面
+
+```bash
+# 在 training/ 目录下
 python -m uvicorn api:app --host 0.0.0.0 --port 8000
 ```
 
-在浏览器中打开 `http://localhost:8000`。
+在浏览器中打开 `http://localhost:8000`，输入提示词并点击 **Generate**。
+
+### 第四步 — 试试这些提示词
+
+| 提示词 | 预期结果 |
+|--------|---------|
+| `medieval village with church and market` | Organic 布局，8-12 栋建筑，石墙，拱窗 |
+| `japanese temple complex` | Organic 布局，翘檐，四坡顶，庭院感 |
+| `modern city block` | Grid 布局，平顶，大窗，简洁几何 |
+| `desert palace with walls` | Plaza 布局，穹顶，厚墙，带城门围墙 |
+| `horror asylum` | Random 布局，高密度细节，暗色调 |
+| `industrial factory district` | Grid 布局，简单几何，高 simple_ratio |
 
 ### 命令行生成
 
 ```python
+# 在 training/ 目录下运行
 from level_layout import generate_level
 
-scene = generate_level(
-    style="medieval_keep",
-    layout_type="organic",
-    building_count=10,
-    seed=42
-)
+# 基本用法
+scene = generate_level(style="medieval_keep", layout_type="organic",
+                       building_count=10, seed=42)
 scene.export("output.glb")
+
+# 自定义区域大小
+scene = generate_level(style="japanese_temple", layout_type="plaza",
+                       building_count=6, area_size=80.0, seed=123)
+scene.export("temple_complex.glb")
 ```
+
+`generate_level()` 参数说明：
+
+| 参数 | 默认值 | 描述 |
+|------|--------|------|
+| `style` | （必填） | 20 种风格之一（如 `medieval`, `japanese_temple`） |
+| `layout_type` | `"street"` | `street` / `grid` / `plaza` / `organic` / `random` |
+| `building_count` | `10` | 生成建筑数量 |
+| `area_size` | `100.0` | 场景区域大小（米，正方形） |
+| `variation` | `0.4` | 风格变化量（0.0 = 完全基准，1.0 = 最大变化） |
+| `seed` | `42` | 随机种子，用于复现 |
+
+### 查看生成文件
+
+- **Web UI**: 内置 3D 预览（Three.js）
+- **桌面**: 用 [Blender](https://www.blender.org/)、Windows 3D 查看器或任意 glTF 查看器打开 `.glb` 文件
+- **UE5**: 导入 `.glb` 或用 `python glb_to_fbx.py` 转换为 `.fbx`
+
+### 运行测试
+
+```bash
+cd training
+python -m pytest tests/ -v
+```
+
+常见问题请参阅 [TROUBLESHOOTING.md](training/TROUBLESHOOTING.md)。
 
 ---
 
