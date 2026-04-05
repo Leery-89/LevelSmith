@@ -42,9 +42,9 @@ generated/
 
 # ── Training data & artifacts ──
 training/cache/
-training/data/
 training/VGLC/
 training/.claude/
+.claude/
 training/training_data/
 training/validation_data/
 training/training_logs/

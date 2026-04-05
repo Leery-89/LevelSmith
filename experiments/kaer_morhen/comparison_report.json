@@ -1,0 +1,173 @@
+{
+  "experiment": "kaer_morhen_comparison",
+  "style": "medieval_keep",
+  "seed": 42,
+  "area": "100.0x100.0m",
+  "cases": [
+    {
+      "label": "street",
+      "layout_type": "street",
+      "graph_name": null,
+      "building_count": 7,
+      "block_count": 7,
+      "role_distribution": {
+        "main": 7
+      },
+      "overlap_count": 0,
+      "too_close_count": 0,
+      "coverage_ratio": 0.0703,
+      "keep_position": {
+        "x": 83.4,
+        "z": 37.4,
+        "w": 11.2,
+        "d": 10.3
+      },
+      "tower_count": 4,
+      "tower_positions": [
+        {
+          "x": 12.2,
+          "z": 37.6
+        },
+        {
+          "x": 83.4,
+          "z": 37.4
+        },
+        {
+          "x": 15.9,
+          "z": 61.8
+        },
+        {
+          "x": 79.5,
+          "z": 62.7
+        }
+      ],
+      "gate_count": 0,
+      "gate_positions": [],
+      "has_courtyard": true,
+      "has_entry_axis": true,
+      "road_renderable": true,
+      "road_node_count": 2,
+      "cluster_count": 7,
+      "cluster_sizes": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "total_faces": 8184,
+      "interpretation": "clustered compound"
+    },
+    {
+      "label": "organic",
+      "layout_type": "organic",
+      "graph_name": null,
+      "building_count": 2,
+      "block_count": 2,
+      "role_distribution": {
+        "main": 1,
+        "normal": 1
+      },
+      "overlap_count": 0,
+      "too_close_count": 0,
+      "coverage_ratio": 0.0365,
+      "keep_position": {
+        "x": 30.0,
+        "z": 30.0,
+        "w": 14.9,
+        "d": 14.9
+      },
+      "tower_count": 1,
+      "tower_positions": [
+        {
+          "x": 29.9,
+          "z": 9.8
+        }
+      ],
+      "gate_count": 0,
+      "gate_positions": [],
+      "has_courtyard": false,
+      "has_entry_axis": true,
+      "road_renderable": false,
+      "road_node_count": 81,
+      "cluster_count": 1,
+      "cluster_sizes": [
+        2
+      ],
+      "total_faces": 2672,
+      "interpretation": "generic settlement"
+    },
+    {
+      "label": "graph",
+      "layout_type": "organic",
+      "graph_name": "kaer_morhen",
+      "building_count": 7,
+      "block_count": 7,
+      "role_distribution": {
+        "primary": 1,
+        "secondary": 3,
+        "tertiary": 1,
+        "ambient": 2
+      },
+      "overlap_count": 0,
+      "too_close_count": 0,
+      "coverage_ratio": 0.0447,
+      "keep_position": {
+        "x": 50.0,
+        "z": 70.0,
+        "w": 15.0,
+        "d": 12.0
+      },
+      "tower_count": 3,
+      "tower_positions": [
+        {
+          "x": 13.0,
+          "z": 13.0
+        },
+        {
+          "x": 87.0,
+          "z": 13.0
+        },
+        {
+          "x": 13.0,
+          "z": 87.0
+        }
+      ],
+      "gate_count": 2,
+      "gate_positions": [
+        {
+          "cx": 50.0,
+          "cz": 8.0,
+          "faces": "south"
+        },
+        {
+          "cx": 50.0,
+          "cz": 92.0,
+          "faces": "north"
+        }
+      ],
+      "has_courtyard": true,
+      "has_entry_axis": true,
+      "road_renderable": true,
+      "road_node_count": 2,
+      "cluster_count": 6,
+      "cluster_sizes": [
+        1,
+        1,
+        1,
+        1,
+        2,
+        1
+      ],
+      "total_faces": 4476,
+      "interpretation": "fortified compound"
+    }
+  ],
+  "summary": {
+    "street": "clustered compound",
+    "organic": "generic settlement",
+    "graph": "fortified compound"
+  }
+}

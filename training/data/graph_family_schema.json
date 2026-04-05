@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LevelSmith Graph Family Schema v1",
+  "description": "Defines abstract spatial prototypes for compound layout generation. A graph family encodes the intent, topology, and placement grammar of a compound — independent of specific style parameters.",
+
+  "type": "object",
+  "required": ["family_name", "intent", "style_bias", "entry_mode", "perimeter_type",
+               "tower_distribution", "courtyard_mode", "support_program", "damage_state",
+               "prototype"],
+
+  "properties": {
+
+    "family_name": {
+      "type": "string",
+      "description": "Unique identifier for the family (e.g. 'mountain_fortress', 'river_palace')."
+    },
+
+    "intent": {
+      "type": "string",
+      "enum": ["defense", "residence", "worship", "commerce", "industry", "governance", "mixed"],
+      "description": "Primary spatial purpose driving the layout."
+    },
+
+    "style_bias": {
+      "type": "string",
+      "description": "Preferred style family (e.g. 'medieval', 'japanese', 'desert'). Used for default style_key assignment when no per-node override exists."
+    },
+
+    "entry_mode": {
+      "type": "string",
+      "enum": ["single_gate", "double_gate", "open_approach", "bridge_crossing",
+               "tunnel", "multi_gate", "ramp"],
+      "description": "How visitors/attackers enter the compound."
+    },
+
+    "perimeter_type": {
+      "type": "string",
+      "enum": ["curtain_wall", "palisade", "moat_and_wall", "cliff_edge",
+               "open", "partial_wall", "terraced_wall"],
+      "description": "Enclosure strategy."
+    },
+
+    "tower_distribution": {
+      "type": "string",
+      "enum": ["corners_only", "corners_and_midwall", "gate_flanking",
+               "regular_interval", "clustered_at_entry", "none"],
+      "description": "How defensive towers are distributed along the perimeter."
+    },
+
+    "courtyard_mode": {
+      "type": "string",
+      "enum": ["single_open", "divided", "tiered", "cloistered",
+               "none", "central_plaza", "ring"],
+      "description": "Interior open space organization."
+    },
+
+    "support_program": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of support functions present (e.g. ['chapel', 'stable', 'well', 'barracks', 'market']). Drives ambient/tertiary node generation."
+    },
+
+    "damage_state": {
+      "type": "string",
+      "enum": ["pristine", "weathered", "battle_scarred", "ruined", "overgrown"],
+      "description": "Overall structural condition."
+    },
+
+    "prototype": {
+      "type": "object",
+      "description": "The graph prototype: nodes, edges, enclosure config, and placement hints.",
+      "required": ["nodes", "edges", "enclosure", "placement_hints"],
+      "properties": {
+
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "role", "function"],
+            "properties": {
+              "id":       { "type": "string", "description": "Unique node identifier." },
+              "role":     { "type": "string", "enum": ["primary", "secondary", "tertiary", "ambient"] },
+              "function": { "type": "string", "description": "Semantic function from the node vocabulary." },
+              "elevation": { "type": "string", "enum": ["highest", "high", "mid", "low"], "default": "low" },
+              "size_hint": { "type": "string", "enum": ["large", "medium", "small", "tiny"], "default": "medium" },
+              "note":     { "type": "string" }
+            }
+          }
+        },
+
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "to", "type"],
+            "properties": {
+              "from": { "type": "string" },
+              "to":   { "type": "string" },
+              "type": { "type": "string", "description": "Relationship type from the edge vocabulary." },
+              "note": { "type": "string" }
+            }
+          }
+        },
+
+        "enclosure": {
+          "type": "object",
+          "properties": {
+            "wall_segments":       { "type": "integer", "minimum": 0 },
+            "battlement_variants": { "type": "integer", "minimum": 0 },
+            "gate_count":          { "type": "integer", "minimum": 0 },
+            "gate_types":          { "type": "array", "items": { "type": "string" } },
+            "bridge_count":        { "type": "integer", "minimum": 0, "default": 0 },
+            "stair_count":         { "type": "integer", "minimum": 0, "default": 0 }
+          }
+        },
+
+        "placement_hints": {
+          "type": "object",
+          "description": "Soft constraints for the block program generator.",
+          "properties": {
+            "primary_position":    { "type": "string" },
+            "secondary_position":  { "type": "string" },
+            "ambient_position":    { "type": "string" },
+            "elevation_gradient":  { "type": "string" },
+            "wall_follows":        { "type": "string" },
+            "gates_at":            { "type": "string" },
+            "symmetry":            { "type": "string", "enum": ["axial", "bilateral", "radial", "none"] }
+          }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+
+    "node_vocabulary": {
+      "description": "Canonical node function names. New functions can be added but should be documented here.",
+      "enum": [
+        "central_keep", "great_hall", "throne_room",
+        "gatehouse", "defensive_tower", "corner_tower", "watchtower",
+        "residential_tower", "barracks", "guard_post",
+        "chapel", "temple", "shrine",
+        "stable", "smithy", "granary", "storehouse", "armory",
+        "market", "tavern", "inn",
+        "well", "fountain", "cistern",
+        "training_ground", "arena",
+        "garden", "courtyard_tree", "statue",
+        "workshop", "furnace", "chimney_stack", "warehouse",
+        "dock", "crane", "silo",
+        "prison", "dungeon",
+        "library", "scriptorium",
+        "kitchen", "bakery",
+        "cemetery", "crypt"
+      ]
+    },
+
+    "edge_vocabulary": {
+      "description": "Canonical edge relationship types.",
+      "enum": [
+        "approach_axis",
+        "adjacent",
+        "flanking",
+        "within_courtyard",
+        "across_bridge",
+        "above",
+        "below",
+        "faces",
+        "backs_onto",
+        "along_wall"
+      ]
+    }
+  }
+}

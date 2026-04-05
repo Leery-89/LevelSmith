@@ -104,10 +104,11 @@ def graph_to_block_program(graph: dict, area_w: float = 100.0,
 
     # ─── Secondary: towers along inner wall perimeter ───
     secondary_nodes = [n for n in nodes if n["role"] == "secondary"]
-    # Predefined tower positions: corners + mid-wall, inside the wall line
     inner_lo = wall_margin + wall_inset
     inner_hi_w = area_w - wall_margin - wall_inset
     inner_hi_d = area_d - wall_margin - wall_inset
+
+    # Predefined tower positions: corners + mid-wall
     tower_slots = [
         (inner_lo,   inner_lo),                       # SW corner
         (inner_hi_w, inner_lo),                       # SE corner
@@ -118,7 +119,26 @@ def graph_to_block_program(graph: dict, area_w: float = 100.0,
         (inner_hi_w, cz),                             # E mid
     ]
 
-    for i, node in enumerate(secondary_nodes):
+    # Place gatehouses first at south-center (gate position)
+    gatehouse_nodes = [n for n in secondary_nodes
+                       if "gatehouse" in n.get("inferred_function", "")]
+    tower_only_nodes = [n for n in secondary_nodes if n not in gatehouse_nodes]
+
+    for node in gatehouse_nodes:
+        w, d = area_w * 0.10, area_d * 0.08
+        candidate = {
+            "id": node["id"], "role": "secondary",
+            "style_key": "medieval_keep",
+            "building_type": node.get("inferred_function", "gatehouse"),
+            "cx": cx, "cz": inner_lo, "w": w, "d": d,
+            "elevation": 0, "yaw": 0,
+        }
+        if _place_with_collision(candidate, placed, min_gap=5.0):
+            placed.append(candidate)
+        else:
+            placed.append(candidate)  # gatehouse gets priority
+
+    for i, node in enumerate(tower_only_nodes):
         func = node.get("inferred_function", "tower")
         if "tower" in func:
             style_key = "medieval_keep"
@@ -127,12 +147,9 @@ def graph_to_block_program(graph: dict, area_w: float = 100.0,
             style_key = "medieval"
             w, d = area_w * 0.10, area_d * 0.08
 
-        # Try predefined slots first, then jittered fallbacks
         block = None
         for attempt in range(20):
             if attempt < len(tower_slots):
-                tx, tz = tower_slots[attempt % len(tower_slots)]
-                # Rotate through slots; skip used ones via collision
                 slot_idx = (i + attempt) % len(tower_slots)
                 tx, tz = tower_slots[slot_idx]
             else:

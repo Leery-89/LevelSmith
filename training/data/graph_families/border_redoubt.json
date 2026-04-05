@@ -1,0 +1,48 @@
+{
+  "family_name": "border_redoubt",
+  "intent": "defense",
+  "style_bias": "medieval",
+  "entry_mode": "single_gate",
+  "perimeter_type": "curtain_wall",
+  "tower_distribution": "gate_flanking",
+  "courtyard_mode": "single_open",
+  "support_program": ["chapel", "stable", "well"],
+  "damage_state": "weathered",
+
+  "prototype": {
+    "nodes": [
+      {"id": "keep",        "role": "primary",   "function": "central_keep",      "elevation": "highest", "size_hint": "large",  "note": "Rectangular stone keep at rear"},
+      {"id": "gatehouse",   "role": "secondary", "function": "gatehouse",         "elevation": "low",     "size_hint": "medium", "note": "Fortified entry with portcullis"},
+      {"id": "east_tower",  "role": "secondary", "function": "defensive_tower",   "elevation": "mid",     "size_hint": "small",  "note": "Corner tower, east wall"},
+      {"id": "west_tower",  "role": "secondary", "function": "defensive_tower",   "elevation": "mid",     "size_hint": "small",  "note": "Corner tower, west wall"},
+      {"id": "chapel",      "role": "tertiary",  "function": "chapel",            "elevation": "low",     "size_hint": "small"},
+      {"id": "stable",      "role": "ambient",   "function": "stable",            "elevation": "low",     "size_hint": "medium"},
+      {"id": "well",        "role": "ambient",   "function": "well",              "elevation": "low",     "size_hint": "tiny"}
+    ],
+    "edges": [
+      {"from": "gatehouse",   "to": "keep",       "type": "approach_axis", "note": "Straight axis from gate to keep"},
+      {"from": "east_tower",  "to": "gatehouse",  "type": "flanking"},
+      {"from": "west_tower",  "to": "gatehouse",  "type": "flanking"},
+      {"from": "chapel",      "to": "keep",       "type": "adjacent"},
+      {"from": "stable",      "to": "keep",       "type": "within_courtyard"},
+      {"from": "well",        "to": "keep",       "type": "within_courtyard"}
+    ],
+    "enclosure": {
+      "wall_segments": 8,
+      "battlement_variants": 4,
+      "gate_count": 1,
+      "gate_types": ["main_gate"],
+      "bridge_count": 0,
+      "stair_count": 1
+    },
+    "placement_hints": {
+      "primary_position": "rear_center",
+      "secondary_position": "gate_flanking_and_corners",
+      "ambient_position": "courtyard_sides",
+      "elevation_gradient": "flat_with_keep_raised",
+      "wall_follows": "rectangular_perimeter",
+      "gates_at": "south_center_only",
+      "symmetry": "bilateral"
+    }
+  }
+}

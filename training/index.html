@@ -118,8 +118,8 @@
       <div>Generating level...</div>
     </div>
     <div class="viewer-overlay" id="dlButtons" style="display:none;">
-      <a id="dlGlb" class="btn btn-secondary" download>GLB</a>
-      <a id="dlFbx" class="btn btn-secondary" download>FBX</a>
+      <a id="dlGlb" class="btn btn-secondary" download>Download GLB (Preview)</a>
+      <a id="dlJson" class="btn btn-secondary" download>Download JSON (UE5)</a>
     </div>
   </div>
 
@@ -130,7 +130,7 @@
       <div class="stat"><span>Vertices</span><span class="stat-val" id="s-verts">-</span></div>
       <div class="stat"><span>Meshes</span><span class="stat-val" id="s-meshes">-</span></div>
       <div class="stat"><span>GLB size</span><span class="stat-val" id="s-glb">-</span></div>
-      <div class="stat"><span>FBX size</span><span class="stat-val" id="s-fbx">-</span></div>
+      <div class="stat"><span>JSON size</span><span class="stat-val" id="s-json">-</span></div>
       <div class="stat"><span>Time</span><span class="stat-val" id="s-time">-</span></div>
       <div class="stat"><span>Clusters</span><span class="stat-val" id="s-clusters">-</span></div>
       <div class="stat"><span>Roads</span><span class="stat-val" id="s-roads">-</span></div>
@@ -373,7 +373,7 @@ async function doGenerate() {
     document.getElementById('s-verts').textContent = data.stats.vertices.toLocaleString();
     document.getElementById('s-meshes').textContent = data.stats.meshes;
     document.getElementById('s-glb').textContent = data.stats.glb_kb + ' KB';
-    document.getElementById('s-fbx').textContent = data.stats.fbx_kb + ' KB';
+    document.getElementById('s-json').textContent = data.stats.json_kb + ' KB';
     document.getElementById('s-time').textContent = data.stats.time_s + 's';
 
     // Update cluster/road stats
@@ -417,9 +417,9 @@ async function doGenerate() {
 
     // Download buttons
     const dlGlb = document.getElementById('dlGlb');
-    const dlFbx = document.getElementById('dlFbx');
+    const dlJson = document.getElementById('dlJson');
     dlGlb.href = data.glb_url;
-    dlFbx.href = data.fbx_url;
+    dlJson.href = data.json_url;
     dlBtns.style.display = 'flex';
 
     // Load 3D preview

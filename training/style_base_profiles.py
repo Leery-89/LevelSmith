@@ -187,9 +187,9 @@ STYLE_BASE_PROFILES = {
             "mass_distribution": "blocky_tall",
         },
         "roof_rules": {
-            "type": "flat_or_barrel_vault",
-            "pitch": 0.10,
-            "eave_overhang": 0.00,
+            "type": "steep_gabled",
+            "pitch": 0.65,
+            "eave_overhang": 0.05,
             "ridge_decoration": False,
         },
         "opening_rules": {
@@ -518,7 +518,8 @@ _ROOF_TYPE_MAP = {
     "flat": 0, "flat_or_sawtooth": 0, "flat_or_barrel_vault": 0,
     "gabled": 1, "gabled_shallow": 1, "steep_gabled": 1,
     "steep_broken": 1, "steep_varied": 1,
-    "hipped": 2, "hipped_curved": 2, "hipped_heavy": 2,
+    "hipped": 2, "hipped_heavy": 2,
+    "hipped_curved": 3,   # pagoda / curved eave (japanese)
     "pointed_spire": 3,
     "dome": 4,
 }

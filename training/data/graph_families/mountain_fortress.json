@@ -1,0 +1,48 @@
+{
+  "family_name": "mountain_fortress",
+  "intent": "defense",
+  "style_bias": "medieval_keep",
+  "entry_mode": "single_gate",
+  "perimeter_type": "terraced_wall",
+  "tower_distribution": "corners_and_midwall",
+  "courtyard_mode": "tiered",
+  "support_program": ["well", "training_ground", "guard_post", "stable"],
+  "damage_state": "battle_scarred",
+
+  "prototype": {
+    "nodes": [
+      {"id": "mainkeep",       "role": "primary",   "function": "central_keep",      "elevation": "highest", "size_hint": "large",  "note": "Multi-story composite keep at highest point"},
+      {"id": "tower_a",        "role": "secondary", "function": "residential_tower", "elevation": "mid",     "size_hint": "medium", "note": "Residential tower (e.g. Triss quarters)"},
+      {"id": "tower_b",        "role": "secondary", "function": "residential_tower", "elevation": "mid",     "size_hint": "medium"},
+      {"id": "barbican",       "role": "secondary", "function": "gatehouse",         "elevation": "low",     "size_hint": "medium", "note": "Entrance defense structure"},
+      {"id": "guard_post",     "role": "tertiary",  "function": "guard_post",        "elevation": "low",     "size_hint": "small"},
+      {"id": "training_ground","role": "ambient",   "function": "training_ground",   "elevation": "low",     "size_hint": "medium"},
+      {"id": "well",           "role": "ambient",   "function": "well",              "elevation": "low",     "size_hint": "tiny"}
+    ],
+    "edges": [
+      {"from": "barbican",        "to": "mainkeep",        "type": "approach_axis", "note": "Main approach from gate to keep"},
+      {"from": "mainkeep",        "to": "tower_a",         "type": "adjacent"},
+      {"from": "mainkeep",        "to": "tower_b",         "type": "adjacent"},
+      {"from": "barbican",        "to": "guard_post",      "type": "flanking"},
+      {"from": "training_ground", "to": "mainkeep",        "type": "within_courtyard"},
+      {"from": "well",            "to": "mainkeep",        "type": "within_courtyard"}
+    ],
+    "enclosure": {
+      "wall_segments": 24,
+      "battlement_variants": 9,
+      "gate_count": 5,
+      "gate_types": ["main_gate", "garden_gate", "wooden_gate", "destroyed_gate"],
+      "bridge_count": 5,
+      "stair_count": 5
+    },
+    "placement_hints": {
+      "primary_position": "highest_elevation_center",
+      "secondary_position": "adjacent_to_primary_and_perimeter",
+      "ambient_position": "courtyard_and_open_spaces",
+      "elevation_gradient": "low_at_entrance_high_at_keep",
+      "wall_follows": "perimeter_with_towers_at_corners",
+      "gates_at": "approach_axis_and_secondary_entrances",
+      "symmetry": "axial"
+    }
+  }
+}

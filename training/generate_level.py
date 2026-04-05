@@ -587,7 +587,7 @@ def build_ground_pad(footprint, floor_t, palette, x_off, z_off):
     d = bounds[3] - bounds[1] + 0.2
     cx = x_off + (bounds[0] + bounds[2]) / 2
     cz = z_off + (bounds[1] + bounds[3]) / 2
-    return make_box([w, 0.05, d], [cx, -floor_t - 0.025, cz], palette["ground"])
+    return make_box([w, 0.30, d], [cx, -floor_t - 0.15, cz], palette["ground"])
 
 
 # ─── 屋顶压顶（沿多边形轮廓顶边） ────────────────────────────────
@@ -1229,11 +1229,16 @@ def build_room(params, palette, x_off=0.0, z_off=0.0, footprint=None,
     meshes.extend(coping_meshes)
 
     # ── 屋顶形态 ────────────────────────────────────────────
-    # L形/U形轮廓强制使用平顶（坡顶/尖顶算法仅适用于矩形平面）
+    # L形/U形轮廓：坡顶/尖顶/翘角算法仅适用于矩形平面
+    # 非矩形时降级为人字顶(1)而非平顶(0)，保留视觉特征
     _b = footprint.bounds
     _bbox_area = (_b[2] - _b[0]) * (_b[3] - _b[1])
     _is_rect   = abs(footprint.area - _bbox_area) < 1e-2 * _bbox_area
-    effective_roof_type = roof_type if _is_rect else 0
+    if _is_rect:
+        effective_roof_type = roof_type
+    else:
+        # 非矩形 fallback: 翘角(3)/四坡(2)/穹顶(4) → 人字顶(1), 人字顶/平顶保持
+        effective_roof_type = 1 if roof_type in (2, 3, 4) else roof_type
 
     if effective_roof_type == 0:
         meshes.extend(build_flat_roof(

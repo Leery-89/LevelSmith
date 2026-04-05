@@ -15,9 +15,15 @@ glb_to_fbx.py
 """
 
 import argparse
+import io
 import sys
 import time
 from pathlib import Path
+
+# Fix Chinese print on Windows cp1252 consoles
+if sys.stdout.encoding and sys.stdout.encoding.lower().startswith("cp"):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 import numpy as np
 

@@ -1,0 +1,139 @@
+{
+  "scene": "oxenfurt_redoubt",
+  "type": "fortified_compound",
+  "topology": "gatehouse_axial",
+
+  "nodes": [
+    {
+      "id": "keep",
+      "role": "primary",
+      "mesh_count": 6,
+      "entity_count": 10,
+      "inferred_function": "central_keep",
+      "elevation": "highest",
+      "note": "Rectangular stone keep at rear of compound, 3 stories"
+    },
+    {
+      "id": "gatehouse",
+      "role": "secondary",
+      "mesh_count": 4,
+      "inferred_function": "gatehouse",
+      "elevation": "low",
+      "note": "Fortified entry building with portcullis, flanked by towers"
+    },
+    {
+      "id": "east_tower",
+      "role": "secondary",
+      "mesh_count": 2,
+      "inferred_function": "defensive_tower",
+      "elevation": "mid",
+      "note": "Corner tower, east wall"
+    },
+    {
+      "id": "west_tower",
+      "role": "secondary",
+      "mesh_count": 2,
+      "inferred_function": "defensive_tower",
+      "elevation": "mid",
+      "note": "Corner tower, west wall"
+    },
+    {
+      "id": "chapel",
+      "role": "tertiary",
+      "mesh_count": 3,
+      "inferred_function": "chapel",
+      "elevation": "low",
+      "note": "Small stone chapel adjacent to keep"
+    },
+    {
+      "id": "stable",
+      "role": "ambient",
+      "mesh_count": 2,
+      "inferred_function": "stable",
+      "elevation": "low",
+      "note": "Horse stable along west wall"
+    },
+    {
+      "id": "well",
+      "role": "ambient",
+      "mesh_count": 1,
+      "inferred_function": "water_source",
+      "elevation": "low"
+    }
+  ],
+
+  "edges": [
+    {
+      "from": "gatehouse",
+      "to": "keep",
+      "type": "approach_axis",
+      "note": "Straight entry axis from gatehouse through courtyard to keep"
+    },
+    {
+      "from": "east_tower",
+      "to": "gatehouse",
+      "type": "flanking",
+      "note": "Tower flanks gate approach from east"
+    },
+    {
+      "from": "west_tower",
+      "to": "gatehouse",
+      "type": "flanking",
+      "note": "Tower flanks gate approach from west"
+    },
+    {
+      "from": "chapel",
+      "to": "keep",
+      "type": "adjacent"
+    },
+    {
+      "from": "stable",
+      "to": "keep",
+      "type": "within_courtyard"
+    },
+    {
+      "from": "well",
+      "to": "keep",
+      "type": "within_courtyard"
+    }
+  ],
+
+  "enclosure": {
+    "wall_segments": 8,
+    "battlement_variants": 4,
+    "gate_count": 1,
+    "gate_types": ["main_gate"],
+    "bridge_count": 0,
+    "stair_count": 1,
+    "note": "Simple rectangular curtain wall, single fortified gate"
+  },
+
+  "archetype_hierarchy": {
+    "primary": {
+      "type": "keep",
+      "mesh_complexity": "high",
+      "evidence": "6 detail meshes, main structure"
+    },
+    "secondary": [
+      {"type": "gatehouse", "count": 1, "evidence": "Fortified entry, 4 meshes"},
+      {"type": "defensive_tower", "count": 2, "evidence": "Flanking towers"}
+    ],
+    "tertiary": [
+      {"type": "chapel", "count": 1}
+    ],
+    "ambient": [
+      {"type": "stable", "count": 1},
+      {"type": "well", "count": 1}
+    ]
+  },
+
+  "layout_priors": {
+    "primary_position": "rear_center",
+    "secondary_position": "gatehouse_at_south_center_towers_flanking",
+    "defensive_position": "gate_flanking_and_corners",
+    "ambient_position": "courtyard_sides",
+    "wall_follows": "rectangular_perimeter",
+    "gates_at": "south_center_only",
+    "elevation_gradient": "flat_with_keep_raised"
+  }
+}

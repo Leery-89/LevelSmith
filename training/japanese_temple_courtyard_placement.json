@@ -1,0 +1,1815 @@
+{
+  "version": "0.1",
+  "scene": {
+    "area_width": 100,
+    "area_depth": 100,
+    "style_key": "japanese_temple",
+    "layout_type": "organic",
+    "seed": 42
+  },
+  "buildings": [
+    {
+      "id": 0,
+      "role": "primary",
+      "position": {
+        "x": 50.0,
+        "y": 0.0,
+        "z": 50.0
+      },
+      "rotation_deg": 8.8,
+      "width": 18.4,
+      "depth": 16.1,
+      "height": 5.68,
+      "style_key": "japanese_temple",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.65,
+        "eave_overhang": 1.0
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.22,
+          "height": 2.66
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.3,
+          "width": 0.67,
+          "height": 1.15,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 6,
+        "wall_thickness": 0.25,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 1,
+      "role": "secondary",
+      "position": {
+        "x": 53.57,
+        "y": 0.0,
+        "z": 16.92
+      },
+      "rotation_deg": 0.0,
+      "width": 15.5,
+      "depth": 13.3,
+      "height": 6.07,
+      "style_key": "japanese_temple",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.65,
+        "eave_overhang": 1.0
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.22,
+          "height": 2.66
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.39,
+          "width": 0.67,
+          "height": 1.15,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 5,
+        "wall_thickness": 0.25,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 2,
+      "role": "tertiary",
+      "position": {
+        "x": 64.69,
+        "y": 0.0,
+        "z": 79.43
+      },
+      "rotation_deg": 33.9,
+      "width": 13.4,
+      "depth": 11.8,
+      "height": 5.54,
+      "style_key": "japanese_temple",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.65,
+        "eave_overhang": 0.7
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.22,
+          "height": 2.66
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.35,
+          "width": 0.67,
+          "height": 1.15,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.2,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 3,
+      "role": "ambient",
+      "position": {
+        "x": 26.92,
+        "y": 0.0,
+        "z": 45.79
+      },
+      "rotation_deg": 259.4,
+      "width": 8.6,
+      "depth": 9.1,
+      "height": 5.92,
+      "style_key": "japanese_temple",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.65,
+        "eave_overhang": 0.5
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.22,
+          "height": 2.66
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.05,
+          "width": 0.67,
+          "height": 1.15,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.25,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 4,
+      "role": "ambient",
+      "position": {
+        "x": 69.65,
+        "y": 0.0,
+        "z": 62.95
+      },
+      "rotation_deg": 61.1,
+      "width": 9.6,
+      "depth": 8.6,
+      "height": 6.0,
+      "style_key": "japanese_temple",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.65,
+        "eave_overhang": 0.5
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.22,
+          "height": 2.66
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.05,
+          "width": 0.67,
+          "height": 1.15,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.25,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 5,
+      "role": "tertiary",
+      "position": {
+        "x": 24.35,
+        "y": 0.0,
+        "z": 67.21
+      },
+      "rotation_deg": 0.0,
+      "width": 10.3,
+      "depth": 8.2,
+      "height": 5.39,
+      "style_key": "japanese_temple",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.65,
+        "eave_overhang": 0.7
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.22,
+          "height": 2.66
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.35,
+          "width": 0.67,
+          "height": 1.15,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.2,
+        "subdivision": 1
+      }
+    }
+  ],
+  "walls": [],
+  "gates": [],
+  "roads": [
+    {
+      "id": 0,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 55.92,
+          "z": 58.57
+        },
+        {
+          "x": 56.39,
+          "z": 59.28
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 56.39,
+          "z": 59.28
+        },
+        {
+          "x": 56.89,
+          "z": 59.98
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 56.89,
+          "z": 59.98
+        },
+        {
+          "x": 57.41,
+          "z": 60.67
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 57.41,
+          "z": 60.67
+        },
+        {
+          "x": 57.95,
+          "z": 61.37
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 57.95,
+          "z": 61.37
+        },
+        {
+          "x": 58.52,
+          "z": 62.06
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 58.52,
+          "z": 62.06
+        },
+        {
+          "x": 59.11,
+          "z": 62.75
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 59.11,
+          "z": 62.75
+        },
+        {
+          "x": 59.72,
+          "z": 63.44
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 59.72,
+          "z": 63.44
+        },
+        {
+          "x": 60.35,
+          "z": 64.12
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 60.35,
+          "z": 64.12
+        },
+        {
+          "x": 61.01,
+          "z": 64.8
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 61.01,
+          "z": 64.8
+        },
+        {
+          "x": 61.68,
+          "z": 65.47
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 61.68,
+          "z": 65.47
+        },
+        {
+          "x": 62.36,
+          "z": 66.14
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 62.36,
+          "z": 66.14
+        },
+        {
+          "x": 63.07,
+          "z": 66.81
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 63.07,
+          "z": 66.81
+        },
+        {
+          "x": 63.79,
+          "z": 67.47
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 63.79,
+          "z": 67.47
+        },
+        {
+          "x": 64.52,
+          "z": 68.13
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 64.52,
+          "z": 68.13
+        },
+        {
+          "x": 65.27,
+          "z": 68.78
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 65.27,
+          "z": 68.78
+        },
+        {
+          "x": 66.03,
+          "z": 69.43
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 66.03,
+          "z": 69.43
+        },
+        {
+          "x": 66.81,
+          "z": 70.07
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 66.81,
+          "z": 70.07
+        },
+        {
+          "x": 67.59,
+          "z": 70.7
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 67.59,
+          "z": 70.7
+        },
+        {
+          "x": 68.38,
+          "z": 71.33
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 68.38,
+          "z": 71.33
+        },
+        {
+          "x": 69.19,
+          "z": 71.95
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 69.19,
+          "z": 71.95
+        },
+        {
+          "x": 70.0,
+          "z": 72.57
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 70.0,
+          "z": 72.57
+        },
+        {
+          "x": 72.47,
+          "z": 74.37
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 72.47,
+          "z": 74.37
+        },
+        {
+          "x": 73.31,
+          "z": 74.96
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 73.31,
+          "z": 74.96
+        },
+        {
+          "x": 74.15,
+          "z": 75.54
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 74.15,
+          "z": 75.54
+        },
+        {
+          "x": 74.99,
+          "z": 76.11
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 74.99,
+          "z": 76.11
+        },
+        {
+          "x": 75.83,
+          "z": 76.67
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 75.83,
+          "z": 76.67
+        },
+        {
+          "x": 76.68,
+          "z": 77.23
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 76.68,
+          "z": 77.23
+        },
+        {
+          "x": 77.52,
+          "z": 77.77
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 77.52,
+          "z": 77.77
+        },
+        {
+          "x": 78.36,
+          "z": 78.31
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 78.36,
+          "z": 78.31
+        },
+        {
+          "x": 79.2,
+          "z": 78.84
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 79.2,
+          "z": 78.84
+        },
+        {
+          "x": 80.04,
+          "z": 79.35
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 39.78,
+          "z": 50.77
+        },
+        {
+          "x": 38.98,
+          "z": 50.91
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 38.98,
+          "z": 50.91
+        },
+        {
+          "x": 38.16,
+          "z": 51.1
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 38.16,
+          "z": 51.1
+        },
+        {
+          "x": 37.35,
+          "z": 51.33
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 37.35,
+          "z": 51.33
+        },
+        {
+          "x": 36.52,
+          "z": 51.59
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 36.52,
+          "z": 51.59
+        },
+        {
+          "x": 35.69,
+          "z": 51.9
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 35.69,
+          "z": 51.9
+        },
+        {
+          "x": 34.86,
+          "z": 52.25
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 34.86,
+          "z": 52.25
+        },
+        {
+          "x": 34.02,
+          "z": 52.63
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 34.02,
+          "z": 52.63
+        },
+        {
+          "x": 33.17,
+          "z": 53.04
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 33.17,
+          "z": 53.04
+        },
+        {
+          "x": 32.33,
+          "z": 53.49
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 32.33,
+          "z": 53.49
+        },
+        {
+          "x": 31.48,
+          "z": 53.96
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 31.48,
+          "z": 53.96
+        },
+        {
+          "x": 30.63,
+          "z": 54.47
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 30.63,
+          "z": 54.47
+        },
+        {
+          "x": 29.77,
+          "z": 55.0
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 29.77,
+          "z": 55.0
+        },
+        {
+          "x": 28.92,
+          "z": 55.56
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 28.92,
+          "z": 55.56
+        },
+        {
+          "x": 28.07,
+          "z": 56.14
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 28.07,
+          "z": 56.14
+        },
+        {
+          "x": 27.22,
+          "z": 56.74
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 27.22,
+          "z": 56.74
+        },
+        {
+          "x": 26.37,
+          "z": 57.37
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 26.37,
+          "z": 57.37
+        },
+        {
+          "x": 25.52,
+          "z": 58.01
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 25.52,
+          "z": 58.01
+        },
+        {
+          "x": 24.68,
+          "z": 58.67
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 24.68,
+          "z": 58.67
+        },
+        {
+          "x": 23.83,
+          "z": 59.34
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 23.83,
+          "z": 59.34
+        },
+        {
+          "x": 23.0,
+          "z": 60.03
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 23.0,
+          "z": 60.03
+        },
+        {
+          "x": 22.16,
+          "z": 60.73
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 22.16,
+          "z": 60.73
+        },
+        {
+          "x": 21.33,
+          "z": 61.44
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 21.33,
+          "z": 61.44
+        },
+        {
+          "x": 20.51,
+          "z": 62.16
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 20.51,
+          "z": 62.16
+        },
+        {
+          "x": 18.09,
+          "z": 64.34
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 18.09,
+          "z": 64.34
+        },
+        {
+          "x": 17.29,
+          "z": 65.07
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 17.29,
+          "z": 65.07
+        },
+        {
+          "x": 16.51,
+          "z": 65.81
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 16.51,
+          "z": 65.81
+        },
+        {
+          "x": 15.74,
+          "z": 66.54
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 15.74,
+          "z": 66.54
+        },
+        {
+          "x": 14.97,
+          "z": 67.26
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 14.97,
+          "z": 67.26
+        },
+        {
+          "x": 14.22,
+          "z": 67.98
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 14.22,
+          "z": 67.98
+        },
+        {
+          "x": 13.48,
+          "z": 68.7
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 13.48,
+          "z": 68.7
+        },
+        {
+          "x": 12.75,
+          "z": 69.4
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 51.45,
+          "z": 41.4
+        },
+        {
+          "x": 51.59,
+          "z": 40.62
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 51.59,
+          "z": 40.62
+        },
+        {
+          "x": 51.77,
+          "z": 39.83
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 51.77,
+          "z": 39.83
+        },
+        {
+          "x": 52.0,
+          "z": 39.04
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 52.0,
+          "z": 39.04
+        },
+        {
+          "x": 52.26,
+          "z": 38.24
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 52.26,
+          "z": 38.24
+        },
+        {
+          "x": 52.56,
+          "z": 37.44
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 52.56,
+          "z": 37.44
+        },
+        {
+          "x": 52.89,
+          "z": 36.63
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 52.89,
+          "z": 36.63
+        },
+        {
+          "x": 53.25,
+          "z": 35.81
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 53.25,
+          "z": 35.81
+        },
+        {
+          "x": 53.65,
+          "z": 35.0
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 53.65,
+          "z": 35.0
+        },
+        {
+          "x": 54.07,
+          "z": 34.17
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 54.07,
+          "z": 34.17
+        },
+        {
+          "x": 54.51,
+          "z": 33.35
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 54.51,
+          "z": 33.35
+        },
+        {
+          "x": 54.99,
+          "z": 32.52
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 54.99,
+          "z": 32.52
+        },
+        {
+          "x": 55.48,
+          "z": 31.69
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 55.48,
+          "z": 31.69
+        },
+        {
+          "x": 55.99,
+          "z": 30.85
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 55.99,
+          "z": 30.85
+        },
+        {
+          "x": 56.53,
+          "z": 30.02
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 56.53,
+          "z": 30.02
+        },
+        {
+          "x": 57.08,
+          "z": 29.18
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 57.08,
+          "z": 29.18
+        },
+        {
+          "x": 57.64,
+          "z": 28.33
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 57.64,
+          "z": 28.33
+        },
+        {
+          "x": 58.22,
+          "z": 27.49
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 58.22,
+          "z": 27.49
+        },
+        {
+          "x": 58.8,
+          "z": 26.65
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 58.8,
+          "z": 26.65
+        },
+        {
+          "x": 59.4,
+          "z": 25.8
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 59.4,
+          "z": 25.8
+        },
+        {
+          "x": 60.0,
+          "z": 24.95
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 60.0,
+          "z": 24.95
+        },
+        {
+          "x": 60.61,
+          "z": 24.11
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 60.61,
+          "z": 24.11
+        },
+        {
+          "x": 61.83,
+          "z": 22.41
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 61.83,
+          "z": 22.41
+        },
+        {
+          "x": 62.45,
+          "z": 21.56
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 62.45,
+          "z": 21.56
+        },
+        {
+          "x": 63.06,
+          "z": 20.71
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 63.06,
+          "z": 20.71
+        },
+        {
+          "x": 63.66,
+          "z": 19.87
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 63.66,
+          "z": 19.87
+        },
+        {
+          "x": 64.26,
+          "z": 19.02
+        }
+      ]
+    },
+    {
+      "id": 88,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 64.26,
+          "z": 19.02
+        },
+        {
+          "x": 64.85,
+          "z": 18.18
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 64.85,
+          "z": 18.18
+        },
+        {
+          "x": 65.43,
+          "z": 17.34
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 65.43,
+          "z": 17.34
+        },
+        {
+          "x": 66.0,
+          "z": 16.5
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 66.0,
+          "z": 16.5
+        },
+        {
+          "x": 66.55,
+          "z": 15.66
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 66.55,
+          "z": 15.66
+        },
+        {
+          "x": 67.09,
+          "z": 14.83
+        }
+      ]
+    },
+    {
+      "id": 93,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 67.09,
+          "z": 14.83
+        },
+        {
+          "x": 67.61,
+          "z": 13.99
+        }
+      ]
+    },
+    {
+      "id": 94,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 67.61,
+          "z": 13.99
+        },
+        {
+          "x": 68.11,
+          "z": 13.16
+        }
+      ]
+    },
+    {
+      "id": 95,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 68.11,
+          "z": 13.16
+        },
+        {
+          "x": 68.59,
+          "z": 12.34
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "type": "secondary",
+      "width": 3.0,
+      "points": [
+        {
+          "x": 55.92,
+          "z": 58.57
+        },
+        {
+          "x": 39.78,
+          "z": 50.77
+        }
+      ]
+    },
+    {
+      "id": 97,
+      "type": "secondary",
+      "width": 3.0,
+      "points": [
+        {
+          "x": 55.92,
+          "z": 58.57
+        },
+        {
+          "x": 51.45,
+          "z": 41.4
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "type": "access",
+      "width": 2.0,
+      "points": [
+        {
+          "x": 50.0,
+          "z": 50.0
+        },
+        {
+          "x": 51.45,
+          "z": 41.4
+        }
+      ]
+    },
+    {
+      "id": 99,
+      "type": "access",
+      "width": 2.0,
+      "points": [
+        {
+          "x": 53.57,
+          "z": 16.92
+        },
+        {
+          "x": 61.83,
+          "z": 22.41
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "type": "access",
+      "width": 2.0,
+      "points": [
+        {
+          "x": 24.35,
+          "z": 67.21
+        },
+        {
+          "x": 20.51,
+          "z": 62.16
+        }
+      ]
+    }
+  ],
+  "ground": {
+    "type": "flat",
+    "material_hint": "wood_plank"
+  },
+  "metadata": {
+    "building_count": 6,
+    "coverage_ratio": 0.091,
+    "role_distribution": {
+      "primary": 1,
+      "secondary": 1,
+      "tertiary": 2,
+      "ambient": 2
+    }
+  }
+}

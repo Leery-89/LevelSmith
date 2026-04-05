@@ -1,0 +1,750 @@
+{
+  "version": "0.1",
+  "scene": {
+    "area_width": 100,
+    "area_depth": 100,
+    "style_key": "industrial",
+    "layout_type": "grid",
+    "seed": 42
+  },
+  "buildings": [
+    {
+      "id": 0,
+      "role": "tertiary",
+      "position": {
+        "x": 19.06,
+        "y": 0.0,
+        "z": 17.98
+      },
+      "rotation_deg": 180.0,
+      "width": 19.4,
+      "depth": 14.5,
+      "height": 8.64,
+      "style_key": "industrial",
+      "roof": {
+        "type": "flat",
+        "type_id": 0,
+        "pitch": 0.08,
+        "eave_overhang": 0.014
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.86,
+          "height": 3.76
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.35,
+          "width": 0.8,
+          "height": 0.8,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.22,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 1,
+      "role": "primary",
+      "position": {
+        "x": 51.91,
+        "y": 0.0,
+        "z": 14.19
+      },
+      "rotation_deg": 270.0,
+      "width": 20.8,
+      "depth": 16.3,
+      "height": 10.79,
+      "style_key": "industrial",
+      "roof": {
+        "type": "flat",
+        "type_id": 0,
+        "pitch": 0.08,
+        "eave_overhang": 0.02
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.86,
+          "height": 3.76
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.45,
+          "width": 0.8,
+          "height": 0.8,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.28,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 2,
+      "role": "tertiary",
+      "position": {
+        "x": 86.18,
+        "y": 0.0,
+        "z": 17.63
+      },
+      "rotation_deg": 180.0,
+      "width": 17.2,
+      "depth": 14.1,
+      "height": 10.73,
+      "style_key": "industrial",
+      "roof": {
+        "type": "flat",
+        "type_id": 0,
+        "pitch": 0.08,
+        "eave_overhang": 0.014
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.86,
+          "height": 3.76
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.35,
+          "width": 0.8,
+          "height": 0.8,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.22,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 3,
+      "role": "ambient",
+      "position": {
+        "x": 17.03,
+        "y": 0.0,
+        "z": 47.09
+      },
+      "rotation_deg": 270.0,
+      "width": 17.1,
+      "depth": 13.3,
+      "height": 10.81,
+      "style_key": "industrial",
+      "roof": {
+        "type": "flat",
+        "type_id": 0,
+        "pitch": 0.08,
+        "eave_overhang": 0.01
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.86,
+          "height": 3.76
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.05,
+          "width": 0.8,
+          "height": 0.8,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.28,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 4,
+      "role": "secondary",
+      "position": {
+        "x": 51.72,
+        "y": 0.0,
+        "z": 49.03
+      },
+      "rotation_deg": 0.0,
+      "width": 19.8,
+      "depth": 15.5,
+      "height": 10.28,
+      "style_key": "industrial",
+      "roof": {
+        "type": "flat",
+        "type_id": 0,
+        "pitch": 0.08,
+        "eave_overhang": 0.02
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.86,
+          "height": 3.76
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.4,
+          "width": 0.8,
+          "height": 0.8,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.28,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 5,
+      "role": "secondary",
+      "position": {
+        "x": 81.3,
+        "y": 0.0,
+        "z": 49.78
+      },
+      "rotation_deg": 90.0,
+      "width": 20.3,
+      "depth": 16.4,
+      "height": 8.27,
+      "style_key": "industrial",
+      "roof": {
+        "type": "flat",
+        "type_id": 0,
+        "pitch": 0.08,
+        "eave_overhang": 0.02
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.86,
+          "height": 3.76
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.4,
+          "width": 0.8,
+          "height": 0.8,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.28,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 6,
+      "role": "ambient",
+      "position": {
+        "x": 17.89,
+        "y": 0.0,
+        "z": 84.97
+      },
+      "rotation_deg": 180.0,
+      "width": 14.3,
+      "depth": 12.9,
+      "height": 9.26,
+      "style_key": "industrial",
+      "roof": {
+        "type": "flat",
+        "type_id": 0,
+        "pitch": 0.08,
+        "eave_overhang": 0.01
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.86,
+          "height": 3.76
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.05,
+          "width": 0.8,
+          "height": 0.8,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.28,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 7,
+      "role": "tertiary",
+      "position": {
+        "x": 49.8,
+        "y": 0.0,
+        "z": 81.26
+      },
+      "rotation_deg": 90.0,
+      "width": 16.3,
+      "depth": 14.1,
+      "height": 11.22,
+      "style_key": "industrial",
+      "roof": {
+        "type": "flat",
+        "type_id": 0,
+        "pitch": 0.08,
+        "eave_overhang": 0.014
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.86,
+          "height": 3.76
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.35,
+          "width": 0.8,
+          "height": 0.8,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.22,
+        "subdivision": 1
+      }
+    }
+  ],
+  "walls": [],
+  "gates": [],
+  "roads": [
+    {
+      "id": 0,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 2.0,
+          "z": 2.0
+        },
+        {
+          "x": 33.33,
+          "z": 2.0
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 2.0,
+          "z": 2.0
+        },
+        {
+          "x": 2.0,
+          "z": 33.33
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 2.0,
+          "z": 33.33
+        },
+        {
+          "x": 33.33,
+          "z": 33.33
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 2.0,
+          "z": 33.33
+        },
+        {
+          "x": 2.0,
+          "z": 66.67
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 2.0,
+          "z": 66.67
+        },
+        {
+          "x": 33.33,
+          "z": 66.67
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 2.0,
+          "z": 66.67
+        },
+        {
+          "x": 2.0,
+          "z": 98.0
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 2.0,
+          "z": 98.0
+        },
+        {
+          "x": 33.33,
+          "z": 98.0
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 33.33,
+          "z": 2.0
+        },
+        {
+          "x": 66.67,
+          "z": 2.0
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 33.33,
+          "z": 2.0
+        },
+        {
+          "x": 33.33,
+          "z": 33.33
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 33.33,
+          "z": 33.33
+        },
+        {
+          "x": 66.67,
+          "z": 33.33
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 33.33,
+          "z": 33.33
+        },
+        {
+          "x": 33.33,
+          "z": 66.67
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 33.33,
+          "z": 66.67
+        },
+        {
+          "x": 66.67,
+          "z": 66.67
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 33.33,
+          "z": 66.67
+        },
+        {
+          "x": 33.33,
+          "z": 98.0
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 33.33,
+          "z": 98.0
+        },
+        {
+          "x": 66.67,
+          "z": 98.0
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 66.67,
+          "z": 2.0
+        },
+        {
+          "x": 98.0,
+          "z": 2.0
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 66.67,
+          "z": 2.0
+        },
+        {
+          "x": 66.67,
+          "z": 33.33
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 66.67,
+          "z": 33.33
+        },
+        {
+          "x": 98.0,
+          "z": 33.33
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 66.67,
+          "z": 33.33
+        },
+        {
+          "x": 66.67,
+          "z": 66.67
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 66.67,
+          "z": 66.67
+        },
+        {
+          "x": 98.0,
+          "z": 66.67
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 66.67,
+          "z": 66.67
+        },
+        {
+          "x": 66.67,
+          "z": 98.0
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 66.67,
+          "z": 98.0
+        },
+        {
+          "x": 98.0,
+          "z": 98.0
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 98.0,
+          "z": 2.0
+        },
+        {
+          "x": 98.0,
+          "z": 33.33
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 98.0,
+          "z": 33.33
+        },
+        {
+          "x": 98.0,
+          "z": 66.67
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "main",
+      "width": 3.5,
+      "points": [
+        {
+          "x": 98.0,
+          "z": 66.67
+        },
+        {
+          "x": 98.0,
+          "z": 98.0
+        }
+      ]
+    }
+  ],
+  "ground": {
+    "type": "flat",
+    "material_hint": "concrete"
+  },
+  "metadata": {
+    "building_count": 8,
+    "coverage_ratio": 0.214,
+    "role_distribution": {
+      "tertiary": 3,
+      "primary": 1,
+      "ambient": 2,
+      "secondary": 2
+    }
+  }
+}

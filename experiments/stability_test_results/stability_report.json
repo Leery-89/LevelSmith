@@ -1,0 +1,590 @@
+{
+  "test_summary": {
+    "total_combinations": 30,
+    "successful_combinations": 30,
+    "overall_success_rate": 1.0,
+    "test_timestamp": 1775210745.9640028
+  },
+  "layout_performance": {
+    "street": {
+      "total": 6,
+      "successful": 6,
+      "success_rate": 1.0,
+      "avg_generation_time": 0.4664303461710612
+    },
+    "grid": {
+      "total": 6,
+      "successful": 6,
+      "success_rate": 1.0,
+      "avg_generation_time": 0.5738864739735922
+    },
+    "plaza": {
+      "total": 6,
+      "successful": 6,
+      "success_rate": 1.0,
+      "avg_generation_time": 0.5014994939168295
+    },
+    "random": {
+      "total": 6,
+      "successful": 6,
+      "success_rate": 1.0,
+      "avg_generation_time": 0.21855413913726807
+    },
+    "organic": {
+      "total": 6,
+      "successful": 6,
+      "success_rate": 1.0,
+      "avg_generation_time": 0.16148662567138672
+    }
+  },
+  "style_performance": {
+    "japanese": {
+      "total": 5,
+      "successful": 5,
+      "success_rate": 1.0,
+      "avg_faces": 4454.8
+    },
+    "medieval_keep": {
+      "total": 5,
+      "successful": 5,
+      "success_rate": 1.0,
+      "avg_faces": 7416.0
+    },
+    "industrial": {
+      "total": 5,
+      "successful": 5,
+      "success_rate": 1.0,
+      "avg_faces": 4720.0
+    },
+    "fantasy_palace": {
+      "total": 5,
+      "successful": 5,
+      "success_rate": 1.0,
+      "avg_faces": 8142.4
+    },
+    "horror": {
+      "total": 5,
+      "successful": 5,
+      "success_rate": 1.0,
+      "avg_faces": 3924.0
+    },
+    "desert": {
+      "total": 5,
+      "successful": 5,
+      "success_rate": 1.0,
+      "avg_faces": 3143.2
+    }
+  },
+  "failed_combinations": [],
+  "weak_combinations": [],
+  "recommended_for_readme": [
+    {
+      "style": "medieval_keep",
+      "layout": "plaza",
+      "faces": 9668,
+      "theoretical_compatibility": "theoretically_good",
+      "generation_time": 0.7505273818969727
+    },
+    {
+      "style": "fantasy_palace",
+      "layout": "plaza",
+      "faces": 8696,
+      "theoretical_compatibility": "theoretically_good",
+      "generation_time": 0.9147260189056396
+    },
+    {
+      "style": "industrial",
+      "layout": "grid",
+      "faces": 7556,
+      "theoretical_compatibility": "theoretically_good",
+      "generation_time": 0.5798087120056152
+    },
+    {
+      "style": "industrial",
+      "layout": "street",
+      "faces": 7032,
+      "theoretical_compatibility": "theoretically_good",
+      "generation_time": 0.47959041595458984
+    },
+    {
+      "style": "japanese",
+      "layout": "street",
+      "faces": 5600,
+      "theoretical_compatibility": "theoretically_good",
+      "generation_time": 0.19104838371276855
+    },
+    {
+      "style": "desert",
+      "layout": "plaza",
+      "faces": 3944,
+      "theoretical_compatibility": "theoretically_good",
+      "generation_time": 0.3970911502838135
+    },
+    {
+      "style": "medieval_keep",
+      "layout": "organic",
+      "faces": 3876,
+      "theoretical_compatibility": "theoretically_good",
+      "generation_time": 0.3565807342529297
+    },
+    {
+      "style": "horror",
+      "layout": "random",
+      "faces": 2136,
+      "theoretical_compatibility": "theoretically_good",
+      "generation_time": 0.22604799270629883
+    }
+  ],
+  "detailed_results": [
+    {
+      "style": "japanese",
+      "layout": "street",
+      "timestamp": 1775210733.708637,
+      "success": true,
+      "error": null,
+      "generation_time": 0.19104838371276855,
+      "mesh_analysis": {
+        "mesh_count": 302,
+        "total_faces": 5600,
+        "file_size_kb": 197.5,
+        "complexity_score": 18.5
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "japanese",
+      "layout": "grid",
+      "timestamp": 1775210733.909677,
+      "success": true,
+      "error": null,
+      "generation_time": 0.22937464714050293,
+      "mesh_analysis": {
+        "mesh_count": 362,
+        "total_faces": 6214,
+        "file_size_kb": 231.4,
+        "complexity_score": 17.2
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "japanese",
+      "layout": "plaza",
+      "timestamp": 1775210734.1500518,
+      "success": true,
+      "error": null,
+      "generation_time": 0.19203805923461914,
+      "mesh_analysis": {
+        "mesh_count": 341,
+        "total_faces": 6190,
+        "file_size_kb": 225.1,
+        "complexity_score": 18.2
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "japanese",
+      "layout": "random",
+      "timestamp": 1775210734.3540936,
+      "success": true,
+      "error": null,
+      "generation_time": 0.08351469039916992,
+      "mesh_analysis": {
+        "mesh_count": 128,
+        "total_faces": 2418,
+        "file_size_kb": 92.8,
+        "complexity_score": 18.9
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "japanese",
+      "layout": "organic",
+      "timestamp": 1775210734.4416027,
+      "success": true,
+      "error": null,
+      "generation_time": 0.0670008659362793,
+      "mesh_analysis": {
+        "mesh_count": 97,
+        "total_faces": 1852,
+        "file_size_kb": 78.7,
+        "complexity_score": 19.1
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "medieval_keep",
+      "layout": "street",
+      "timestamp": 1775210734.5116026,
+      "success": true,
+      "error": null,
+      "generation_time": 0.4985947608947754,
+      "mesh_analysis": {
+        "mesh_count": 598,
+        "total_faces": 9120,
+        "file_size_kb": 363.2,
+        "complexity_score": 15.3
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "medieval_keep",
+      "layout": "grid",
+      "timestamp": 1775210735.068728,
+      "success": true,
+      "error": null,
+      "generation_time": 0.8202064037322998,
+      "mesh_analysis": {
+        "mesh_count": 670,
+        "total_faces": 9880,
+        "file_size_kb": 402.2,
+        "complexity_score": 14.7
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "medieval_keep",
+      "layout": "plaza",
+      "timestamp": 1775210735.9279397,
+      "success": true,
+      "error": null,
+      "generation_time": 0.7505273818969727,
+      "mesh_analysis": {
+        "mesh_count": 630,
+        "total_faces": 9668,
+        "file_size_kb": 385.9,
+        "complexity_score": 15.3
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "medieval_keep",
+      "layout": "random",
+      "timestamp": 1775210736.8009782,
+      "success": true,
+      "error": null,
+      "generation_time": 0.31938695907592773,
+      "mesh_analysis": {
+        "mesh_count": 294,
+        "total_faces": 4536,
+        "file_size_kb": 185.2,
+        "complexity_score": 15.4
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "medieval_keep",
+      "layout": "organic",
+      "timestamp": 1775210737.1388812,
+      "success": true,
+      "error": null,
+      "generation_time": 0.3565807342529297,
+      "mesh_analysis": {
+        "mesh_count": 252,
+        "total_faces": 3876,
+        "file_size_kb": 162.4,
+        "complexity_score": 15.4
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "industrial",
+      "layout": "street",
+      "timestamp": 1775210737.5114617,
+      "success": true,
+      "error": null,
+      "generation_time": 0.47959041595458984,
+      "mesh_analysis": {
+        "mesh_count": 309,
+        "total_faces": 7032,
+        "file_size_kb": 216.1,
+        "complexity_score": 22.8
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "industrial",
+      "layout": "grid",
+      "timestamp": 1775210738.0775676,
+      "success": true,
+      "error": null,
+      "generation_time": 0.5798087120056152,
+      "mesh_analysis": {
+        "mesh_count": 363,
+        "total_faces": 7556,
+        "file_size_kb": 242.2,
+        "complexity_score": 20.8
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "industrial",
+      "layout": "plaza",
+      "timestamp": 1775210738.6773753,
+      "success": true,
+      "error": null,
+      "generation_time": 0.3415989875793457,
+      "mesh_analysis": {
+        "mesh_count": 252,
+        "total_faces": 5340,
+        "file_size_kb": 177.5,
+        "complexity_score": 21.2
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "industrial",
+      "layout": "random",
+      "timestamp": 1775210739.0339823,
+      "success": true,
+      "error": null,
+      "generation_time": 0.19103407859802246,
+      "mesh_analysis": {
+        "mesh_count": 101,
+        "total_faces": 2540,
+        "file_size_kb": 78.9,
+        "complexity_score": 25.1
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "industrial",
+      "layout": "organic",
+      "timestamp": 1775210739.231018,
+      "success": true,
+      "error": null,
+      "generation_time": 0.14780879020690918,
+      "mesh_analysis": {
+        "mesh_count": 43,
+        "total_faces": 1132,
+        "file_size_kb": 39.6,
+        "complexity_score": 26.3
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "fantasy_palace",
+      "layout": "street",
+      "timestamp": 1775210739.3818252,
+      "success": true,
+      "error": null,
+      "generation_time": 0.9446938037872314,
+      "mesh_analysis": {
+        "mesh_count": 839,
+        "total_faces": 12132,
+        "file_size_kb": 494.9,
+        "complexity_score": 14.5
+      },
+      "quality_assessment": "complex"
+    },
+    {
+      "style": "fantasy_palace",
+      "layout": "grid",
+      "timestamp": 1775210740.38803,
+      "success": true,
+      "error": null,
+      "generation_time": 1.1294221878051758,
+      "mesh_analysis": {
+        "mesh_count": 925,
+        "total_faces": 13060,
+        "file_size_kb": 537.0,
+        "complexity_score": 14.1
+      },
+      "quality_assessment": "complex"
+    },
+    {
+      "style": "fantasy_palace",
+      "layout": "plaza",
+      "timestamp": 1775210741.568587,
+      "success": true,
+      "error": null,
+      "generation_time": 0.9147260189056396,
+      "mesh_analysis": {
+        "mesh_count": 602,
+        "total_faces": 8696,
+        "file_size_kb": 360.0,
+        "complexity_score": 14.4
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "fantasy_palace",
+      "layout": "random",
+      "timestamp": 1775210742.5183094,
+      "success": true,
+      "error": null,
+      "generation_time": 0.33182215690612793,
+      "mesh_analysis": {
+        "mesh_count": 328,
+        "total_faces": 4704,
+        "file_size_kb": 199.1,
+        "complexity_score": 14.3
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "fantasy_palace",
+      "layout": "organic",
+      "timestamp": 1775210742.8691313,
+      "success": true,
+      "error": null,
+      "generation_time": 0.19905328750610352,
+      "mesh_analysis": {
+        "mesh_count": 147,
+        "total_faces": 2120,
+        "file_size_kb": 94.2,
+        "complexity_score": 14.4
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "horror",
+      "layout": "street",
+      "timestamp": 1775210743.0771773,
+      "success": true,
+      "error": null,
+      "generation_time": 0.38909363746643066,
+      "mesh_analysis": {
+        "mesh_count": 250,
+        "total_faces": 4624,
+        "file_size_kb": 162.8,
+        "complexity_score": 18.5
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "horror",
+      "layout": "grid",
+      "timestamp": 1775210743.4822688,
+      "success": true,
+      "error": null,
+      "generation_time": 0.36707401275634766,
+      "mesh_analysis": {
+        "mesh_count": 330,
+        "total_faces": 5540,
+        "file_size_kb": 207.2,
+        "complexity_score": 16.8
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "horror",
+      "layout": "plaza",
+      "timestamp": 1775210743.8693435,
+      "success": true,
+      "error": null,
+      "generation_time": 0.41301536560058594,
+      "mesh_analysis": {
+        "mesh_count": 289,
+        "total_faces": 5296,
+        "file_size_kb": 190.1,
+        "complexity_score": 18.3
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "horror",
+      "layout": "random",
+      "timestamp": 1775210744.2983546,
+      "success": true,
+      "error": null,
+      "generation_time": 0.22604799270629883,
+      "mesh_analysis": {
+        "mesh_count": 109,
+        "total_faces": 2136,
+        "file_size_kb": 80.1,
+        "complexity_score": 19.6
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "horror",
+      "layout": "organic",
+      "timestamp": 1775210744.5324132,
+      "success": true,
+      "error": null,
+      "generation_time": 0.15095043182373047,
+      "mesh_analysis": {
+        "mesh_count": 101,
+        "total_faces": 2024,
+        "file_size_kb": 82.8,
+        "complexity_score": 20.0
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "desert",
+      "layout": "street",
+      "timestamp": 1775210744.69136,
+      "success": true,
+      "error": null,
+      "generation_time": 0.2955610752105713,
+      "mesh_analysis": {
+        "mesh_count": 223,
+        "total_faces": 4280,
+        "file_size_kb": 144.6,
+        "complexity_score": 19.2
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "desert",
+      "layout": "grid",
+      "timestamp": 1775210745.000922,
+      "success": true,
+      "error": null,
+      "generation_time": 0.31743288040161133,
+      "mesh_analysis": {
+        "mesh_count": 281,
+        "total_faces": 4932,
+        "file_size_kb": 177.7,
+        "complexity_score": 17.6
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "desert",
+      "layout": "plaza",
+      "timestamp": 1775210745.3363574,
+      "success": true,
+      "error": null,
+      "generation_time": 0.3970911502838135,
+      "mesh_analysis": {
+        "mesh_count": 213,
+        "total_faces": 3944,
+        "file_size_kb": 141.6,
+        "complexity_score": 18.5
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "desert",
+      "layout": "random",
+      "timestamp": 1775210745.7459602,
+      "success": true,
+      "error": null,
+      "generation_time": 0.15951895713806152,
+      "mesh_analysis": {
+        "mesh_count": 93,
+        "total_faces": 2004,
+        "file_size_kb": 69.8,
+        "complexity_score": 21.5
+      },
+      "quality_assessment": "acceptable"
+    },
+    {
+      "style": "desert",
+      "layout": "organic",
+      "timestamp": 1775210745.9124784,
+      "success": true,
+      "error": null,
+      "generation_time": 0.047525644302368164,
+      "mesh_analysis": {
+        "mesh_count": 25,
+        "total_faces": 556,
+        "file_size_kb": 27.2,
+        "complexity_score": 22.2
+      },
+      "quality_assessment": "acceptable"
+    }
+  ]
+}

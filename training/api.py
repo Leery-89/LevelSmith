@@ -55,7 +55,7 @@ class GenerateRequest(BaseModel):
 
 class GenerateResponse(BaseModel):
     glb_url: str
-    fbx_url: str
+    json_url: str
     stats: dict
     parsed: dict
     clusters: list = []
@@ -326,9 +326,8 @@ DENSITY_MAP = {"dense": 1.5, "normal": 3.0, "sparse": 6.0}
 def run_generation(zones: list, min_gap: float, seed: int,
                    archetype_plan: dict = None,
                    graph_name: str = None) -> dict:
-    """Run level generation for one or more zones, merge, export GLB + FBX."""
+    """Run level generation for one or more zones, merge, export GLB + JSON."""
     import level_layout
-    import glb_to_fbx
 
     zone_scenes = []
     for i, zone in enumerate(zones):
@@ -358,11 +357,16 @@ def run_generation(zones: list, min_gap: float, seed: int,
     zone_hash = hashlib.md5(str(zones).encode()).hexdigest()[:8]
     base_name = f"level_{zone_hash}_{seed}"
     glb_path = OUTPUT_DIR / f"{base_name}.glb"
-    fbx_path = OUTPUT_DIR / f"{base_name}.fbx"
+    json_path = OUTPUT_DIR / f"{base_name}_placement.json"
 
     t0 = time.time()
     merged.export(str(glb_path))
-    glb_to_fbx.convert(str(glb_path), str(fbx_path))
+
+    # Export placement JSON for UE5 assembly
+    placement = getattr(merged, "metadata", {}).get("placement")
+    if placement:
+        json_path.write_text(
+            json.dumps(placement, indent=2, ensure_ascii=False), encoding="utf-8")
     elapsed = time.time() - t0
 
     total_faces = sum(len(g.faces) for g in merged.geometry.values())
@@ -406,16 +410,18 @@ def run_generation(zones: list, min_gap: float, seed: int,
         "renderable": meta.get("road_renderable", True),
     }
 
+    json_kb = round(json_path.stat().st_size / 1024, 1) if json_path.exists() else 0
+
     return {
         "glb_url": f"/download/{glb_path.name}",
-        "fbx_url": f"/download/{fbx_path.name}",
+        "json_url": f"/download/{json_path.name}",
         "stats": {
             "faces": total_faces,
             "vertices": total_verts,
             "meshes": len(merged.geometry),
             "zones": len(zones),
             "glb_kb": round(glb_path.stat().st_size / 1024, 1),
-            "fbx_kb": round(fbx_path.stat().st_size / 1024, 1),
+            "json_kb": json_kb,
             "time_s": round(elapsed, 2),
         },
         "clusters": clusters_out,
@@ -497,5 +503,10 @@ async def download(filename: str):
     path = OUTPUT_DIR / filename
     if not path.exists() or not path.is_file():
         raise HTTPException(404, "File not found")
-    media = "model/gltf-binary" if filename.endswith(".glb") else "application/octet-stream"
+    if filename.endswith(".glb"):
+        media = "model/gltf-binary"
+    elif filename.endswith(".json"):
+        media = "application/json"
+    else:
+        media = "application/octet-stream"
     return FileResponse(path, media_type=media, filename=filename)

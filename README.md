@@ -552,3 +552,53 @@ Each generated scene includes:
 | RTX 4070 Laptop | Training (CUDA) |
 | AMD XDNA 2 NPU | Inference (experimental) |
 | CPU | Fallback inference |
+
+---
+
+## Kaer Morhen Prototype
+
+A reproducible comparison showing how layout strategy affects spatial character.
+Three cases use the same style (`medieval_keep`), seed (42), and area (100x100m).
+
+### Cases
+
+| Case | Layout | Buildings | Roles | Gates | Courtyard | Classification |
+|------|--------|-----------|-------|-------|-----------|----------------|
+| **street** | Linear road | 7 | all uniform | 0 | yes (by spacing) | generic settlement |
+| **organic** | Bezier roads | 2 | anchor + 1 | 0 | no | generic settlement |
+| **graph** | Layout graph | 7 | 1 primary, 3 secondary, 1 tertiary, 2 ambient | 2 | yes | fortified compound |
+
+### Key Observations
+
+- **street** produces a linear row of identical buildings with no spatial hierarchy.
+  It reads as a village street, not a fortress.
+- **organic** only places 2 buildings (medieval_keep dimensions are large relative to the
+  60x60m compact area), losing the compound entirely.
+- **graph** (kaer_morhen) places a central keep at (50, 70), three corner towers along the
+  perimeter wall, and small courtyard structures. It has gates, an approach axis, and clear
+  role differentiation. This is the only case that reads as a fortified compound.
+
+### Metrics
+
+| Metric | street | organic | graph |
+|--------|--------|---------|-------|
+| Building count | 7 | 2 | 7 |
+| Overlap count | 0 | 0 | 0 |
+| Too-close count | 0 | 0 | 0 |
+| Coverage ratio | 7.0% | 3.6% | 4.5% |
+| Keep position | (83, 37) | (30, 30) | (50, 70) |
+| Keep size | 11x10m | 15x15m | 15x12m |
+| Towers | 4 (coincidental) | 1 | 3 (at wall corners) |
+| Gates | 0 | 0 | 2 (south + north) |
+| Entry axis | yes (road) | yes (road) | yes (gate-to-keep) |
+| Clusters | 7 | 1 | 6 |
+
+### Reproduce
+
+```bash
+python experiments/kaer_morhen_comparison.py
+```
+
+Outputs are saved to `experiments/kaer_morhen/`:
+- `street.glb`, `organic.glb`, `graph.glb` -- 3D scenes (open in Blender / VS Code glTF viewer)
+- `comparison_report.json` -- structured metrics for all 3 cases

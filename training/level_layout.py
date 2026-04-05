@@ -198,7 +198,18 @@ def _make_footprint(fp_type: str, w: float, d: float,
         return sbox(0, 0, w, d)
 
 
-def _pick_footprint_type(variation: float, rng: np.random.Generator) -> str:
+# Styles whose roof types (pagoda/hip/dome) require rectangular footprints
+_RECT_ROOF_STYLES = frozenset({
+    "japanese", "japanese_temple", "japanese_machiya",
+    "desert", "desert_palace",
+})
+
+
+def _pick_footprint_type(variation: float, rng: np.random.Generator,
+                         style: str = "") -> str:
+    # Pagoda / hip / dome roofs only work on rectangular footprints
+    if style in _RECT_ROOF_STYLES:
+        return "rect"
     if variation < 0.25:
         return "rect"
     elif variation < 0.55:
@@ -207,6 +218,9 @@ def _pick_footprint_type(variation: float, rng: np.random.Generator) -> str:
         return rng.choice(["rect", "L", "U"])
     else:
         return rng.choice(["rect", "L", "L", "U"])
+
+
+_MIN_BUILDING_DIM = 6.0   # absolute minimum width or depth (meters)
 
 
 def _building_size(style: str, variation: float,
@@ -234,6 +248,9 @@ def _building_size(style: str, variation: float,
     else:
         w = rng.uniform(wmin, wmin + (wmax - wmin) * (0.5 + noise))
         d = rng.uniform(dmin, dmin + (dmax - dmin) * (0.5 + noise))
+    # enforce minimum dimensions to prevent degenerate buildings
+    w = max(w, _MIN_BUILDING_DIM)
+    d = max(d, _MIN_BUILDING_DIM)
     return round(w, 1), round(d, 1)
 
 
@@ -1356,7 +1373,7 @@ class RoadGraph:
             color = access_c if e.road_type == "access" else road_c
             width = e.width if e.road_type != "access" else min(e.width, 2.0)
             seg = _make_road_segment((n1.x, n1.z), (n2.x, n2.z),
-                                     width, 0.06, color)
+                                     width, 0.20, color)
             if seg:
                 meshes.append(seg)
         return meshes
@@ -2941,15 +2958,31 @@ def _assign_buildings_to_lots(building_roles: list,
         GEO_MARGIN = 0.5 + eave_val * 1.5  # 0.5m base + scaled by eave
 
         # Available area = lot bounds inset by setback + geometry margin
+        lot_w = bounds[2] - bounds[0]
+        lot_d = bounds[3] - bounds[1]
         inset = setback + GEO_MARGIN
-        avail_w = (bounds[2] - bounds[0]) - inset * 2
-        avail_d = (bounds[3] - bounds[1]) - inset * 2
 
-        # Building size = available * fill_ratio, with min footprint from profile
-        max_w = max(2.0, avail_w * fill_ratio)
-        max_d = max(2.0, avail_d * fill_ratio)
+        # If inset is too aggressive, reduce it to leave room for min building
+        max_inset_w = max(0.5, (lot_w - _MIN_BUILDING_DIM) / 2)
+        max_inset_d = max(0.5, (lot_d - _MIN_BUILDING_DIM) / 2)
+        inset_w = min(inset, max_inset_w)
+        inset_d = min(inset, max_inset_d)
+
+        avail_w = lot_w - inset_w * 2
+        avail_d = lot_d - inset_d * 2
+
+        # Skip lots that are physically too small even with minimal inset
+        if lot_w < _MIN_BUILDING_DIM + 1.0 or lot_d < _MIN_BUILDING_DIM + 1.0:
+            used.discard(lot_idx)
+            continue
+
+        # Building size = available * fill_ratio, with min footprint enforced
+        max_w = max(_MIN_BUILDING_DIM, avail_w * fill_ratio)
+        max_d = max(_MIN_BUILDING_DIM, avail_d * fill_ratio)
         w = min(w, max_w)
         d = min(d, max_d)
+        w = max(w, _MIN_BUILDING_DIM)
+        d = max(d, _MIN_BUILDING_DIM)
 
         # Apply minimum footprint from style profile (prevent overly thin buildings)
         from style_base_profiles import apply_style_profile as _asp, get_profile_for_style as _gpfs
@@ -2967,16 +3000,16 @@ def _assign_buildings_to_lots(building_roles: list,
         cx += float(rng.uniform(-1.0, 1.0))
         cz += float(rng.uniform(-1.0, 1.0))
 
-        # Clamp center so building + geometry margin stays inside lot
-        safe_minx = bounds[0] + inset + w / 2
-        safe_maxx = bounds[2] - inset - w / 2
-        safe_minz = bounds[1] + inset + d / 2
-        safe_maxz = bounds[3] - inset - d / 2
+        # Clamp center so building stays inside lot (use actual inset per axis)
+        safe_minx = bounds[0] + inset_w + w / 2
+        safe_maxx = bounds[2] - inset_w - w / 2
+        safe_minz = bounds[1] + inset_d + d / 2
+        safe_maxz = bounds[3] - inset_d - d / 2
         cx = max(safe_minx, min(safe_maxx, cx))
         cz = max(safe_minz, min(safe_maxz, cz))
 
         yaw += float(rng.uniform(-8.0, 8.0))
-        fp = _pick_footprint_type(variation, rng)
+        fp = _pick_footprint_type(variation, rng, style=bstyle)
         slots.append(BuildingSlot(
             cx - w / 2, cz - d / 2, w, d, fp,
             yaw_deg=yaw % 360,
@@ -3399,6 +3432,227 @@ def generate_from_graph(graph_name: str, area_w: float = 100.0,
     return slots, program.get("walls"), program.get("roads"), program.get("metadata")
 
 
+# ─── Rule-based role assignment (no-LLM fallback) ──────────────────
+
+def _assign_roles_by_rule(building_infos: list, slots: list, style: str):
+    """
+    Assign building roles by area when no archetype agent is available.
+    Largest building = primary, next 1-2 = secondary, rest = tertiary.
+    Style-specific labels for semantic richness.
+    """
+    indexed = list(enumerate(building_infos))
+    indexed.sort(key=lambda ib: ib[1].get("w", 0) * ib[1].get("d", 0), reverse=True)
+
+    n = len(indexed)
+    n_secondary = min(2, max(1, n // 4))
+
+    for rank, (idx, binfo) in enumerate(indexed):
+        if rank == 0:
+            role = "primary"
+        elif rank <= n_secondary:
+            role = "secondary"
+        elif rank >= n - 2 and n > 4:
+            role = "ambient"
+        else:
+            role = "tertiary"
+
+        binfo["role"] = role
+        if idx < len(slots):
+            slots[idx].role = role
+            slots[idx].is_anchor = (role == "primary")
+
+
+# ─── Placement JSON export ─────────────────────────────────────────
+
+def export_placement_json(building_infos: list, road_graph,
+                          style: str, layout_type: str,
+                          area_w: float, area_d: float,
+                          seed: int) -> dict:
+    """
+    Build a placement JSON dict from generation results.
+    Contains all data needed for UE5-side scene assembly.
+    """
+    from collections import Counter
+
+    # ── Buildings ──
+    buildings_out = []
+    for b in building_infos:
+        buildings_out.append({
+            "id": b.get("idx", 0),
+            "role": b.get("role", "tertiary"),
+            "position": {
+                "x": round(b.get("x", 0), 2),
+                "y": 0.0,
+                "z": round(b.get("z", 0), 2),
+            },
+            "rotation_deg": round(b.get("yaw_deg", 0), 1),
+            "width": round(b.get("w", 8), 2),
+            "depth": round(b.get("d", 8), 2),
+            "height": round(b.get("height", 6), 2),
+            "style_key": b.get("style_key", style),
+            "roof": {
+                "type": b.get("roof_type_name", "flat"),
+                "type_id": b.get("roof_type", 0),
+                "pitch": b.get("roof_pitch", 0),
+                "eave_overhang": b.get("eave_overhang", 0),
+            },
+            "doors": [{
+                "wall": "front",
+                "offset_ratio": 0.5,
+                "width": b.get("door_width", 1.0),
+                "height": b.get("door_height", 2.0),
+            }],
+            "windows": [{
+                "wall": "all",
+                "density": b.get("win_density", 0.3),
+                "width": b.get("win_width", 0.6),
+                "height": b.get("win_height", 0.8),
+                "shape": b.get("window_shape_name", "rectangular"),
+                "shape_id": b.get("window_shape", 0),
+            }],
+            "features": {
+                "has_battlements": b.get("has_battlements", False),
+                "has_arch": b.get("has_arch", False),
+                "column_count": b.get("column_count", 0),
+                "wall_thickness": b.get("wall_thickness", 0.3),
+                "subdivision": b.get("subdivision", 1),
+            },
+        })
+
+    # ── Roads (include all, not just renderable) ──
+    roads_out = []
+    if road_graph and road_graph.edges:
+        for ei, edge in enumerate(road_graph.edges):
+            n1 = next((n for n in road_graph.nodes if n.id == edge.from_id), None)
+            n2 = next((n for n in road_graph.nodes if n.id == edge.to_id), None)
+            if n1 and n2:
+                roads_out.append({
+                    "id": ei,
+                    "type": edge.road_type,
+                    "width": round(edge.width, 1),
+                    "points": [
+                        {"x": round(n1.x, 2), "z": round(n1.z, 2)},
+                        {"x": round(n2.x, 2), "z": round(n2.z, 2)},
+                    ],
+                })
+
+    # ── Walls & gates (from road-wall intersection data) ──
+    walls_out = []
+    gates_out = []
+    inset = 2.0
+    if style in _WALL_STYLES:
+        wall_sides = [
+            ("south", inset, inset, area_w - inset, inset),
+            ("north", inset, area_d - inset, area_w - inset, area_d - inset),
+            ("west",  inset, inset, inset, area_d - inset),
+            ("east",  area_w - inset, inset, area_w - inset, area_d - inset),
+        ]
+        for wi, (side, x1, z1, x2, z2) in enumerate(wall_sides):
+            walls_out.append({
+                "id": wi,
+                "side": side,
+                "start": {"x": round(x1, 1), "z": round(z1, 1)},
+                "end": {"x": round(x2, 1), "z": round(z2, 1)},
+                "height": 2.5,
+                "thickness": 0.5,
+            })
+
+        # Map _find_gate_points names → wall side names
+        _GATE_WALL_MAP = {
+            "front": "south", "back": "north",
+            "left": "west", "right": "east",
+        }
+
+        if road_graph:
+            gate_pts = _find_gate_points(area_w, area_d, road_graph, inset)
+            for gi, gp in enumerate(gate_pts):
+                gates_out.append({
+                    "id": gi,
+                    "wall_side": _GATE_WALL_MAP.get(gp["wall"], gp["wall"]),
+                    "position": {
+                        "x": round(gp.get("x", 0), 2),
+                        "z": round(gp.get("z", 0), 2),
+                    },
+                    "width": round(gp.get("width", 6.0), 1),
+                    "height": 2.5,
+                })
+
+            # Fallback: if no road crosses the wall, place a default gate
+            # on the wall nearest to the closest road endpoint.
+            if not gates_out and road_graph.nodes:
+                road_nodes = [n for n in road_graph.nodes
+                              if getattr(n, "ntype", "") in
+                              ("road", "intersection", "endpoint")]
+                if road_nodes:
+                    # Find the road node closest to any wall
+                    best_dist = float("inf")
+                    best_wall = "south"
+                    best_pos = area_w / 2
+                    for n in road_nodes:
+                        edges = [
+                            ("south", abs(n.z - inset), n.x),
+                            ("north", abs(n.z - (area_d - inset)), n.x),
+                            ("west",  abs(n.x - inset), n.z),
+                            ("east",  abs(n.x - (area_w - inset)), n.z),
+                        ]
+                        for wname, dist, pos in edges:
+                            if dist < best_dist:
+                                best_dist = dist
+                                best_wall = wname
+                                best_pos = pos
+                    # Clamp gate position within wall range
+                    margin = 6.0
+                    if best_wall in ("south", "north"):
+                        best_pos = max(inset + margin, min(best_pos,
+                                       area_w - inset - margin))
+                        gz = inset if best_wall == "south" else area_d - inset
+                        gx = best_pos
+                    else:
+                        best_pos = max(inset + margin, min(best_pos,
+                                       area_d - inset - margin))
+                        gx = inset if best_wall == "west" else area_w - inset
+                        gz = best_pos
+                    gates_out.append({
+                        "id": 0,
+                        "wall_side": best_wall,
+                        "position": {"x": round(gx, 2), "z": round(gz, 2)},
+                        "width": 6.0,
+                        "height": 2.5,
+                    })
+
+    # ── Metadata ──
+    role_dist = dict(Counter(b.get("role", "") for b in building_infos))
+    total_fp = sum(b.get("w", 0) * b.get("d", 0) for b in building_infos)
+    coverage = total_fp / (area_w * area_d) if area_w * area_d > 0 else 0
+
+    return {
+        "version": "0.1",
+        "scene": {
+            "area_width": round(area_w, 1),
+            "area_depth": round(area_d, 1),
+            "style_key": style,
+            "layout_type": layout_type,
+            "seed": seed,
+        },
+        "buildings": buildings_out,
+        "walls": walls_out,
+        "gates": gates_out,
+        "roads": roads_out,
+        "ground": {
+            "type": "flat",
+            "material_hint": "stone_cobble" if "medieval" in style else
+                             "wood_plank" if "japanese" in style else
+                             "concrete" if "industrial" in style or "modern" in style else
+                             "sand" if "desert" in style else "dirt",
+        },
+        "metadata": {
+            "building_count": len(building_infos),
+            "coverage_ratio": round(coverage, 3),
+            "role_distribution": role_dist,
+        },
+    }
+
+
 def generate_level(
     style: str,
     layout_type: str = "street",
@@ -3532,6 +3786,11 @@ def generate_level(
             "fp_local": fp_local, "y_offset": y_offset, "bi": bi,
         })
 
+    # ── Rule-based role assignment (fallback when no LLM/archetype) ──
+    has_roles = any(b["role"] for b in building_infos)
+    if not has_roles and building_infos:
+        _assign_roles_by_rule(building_infos, slots, style)
+
     stats = {"buildings": 0, "total_footprint_m2": 0.0, "style": style,
              "layout": layout_type, "area": f"{aw:.0f}m x {ad:.0f}m",
              "variation": variation}
@@ -3618,6 +3877,46 @@ def generate_level(
 
         # Remove internal keys before passing to build_room
         bparams.pop("_symmetry_bias", None)
+
+        # Snapshot final params for placement JSON export
+        _ROOF_NAMES = {0: "flat", 1: "gabled", 2: "hipped", 3: "pagoda", 4: "dome"}
+        _WIN_SHAPE_NAMES = {0: "rectangular", 1: "pointed_arch", 2: "round_arch",
+                            3: "barred", 4: "horizontal"}
+        if bi < len(building_infos):
+            bi_ref = building_infos[bi]
+            bi_ref["roof_type"] = int(bparams.get("roof_type", 0))
+            bi_ref["roof_type_name"] = _ROOF_NAMES.get(
+                int(bparams.get("roof_type", 0)), "flat")
+            bi_ref["roof_pitch"] = round(float(bparams.get("roof_pitch", 0)), 3)
+            bi_ref["eave_overhang"] = round(
+                float(bparams.get("eave_overhang", 0)), 3)
+            bi_ref["wall_thickness"] = round(
+                float(bparams.get("wall_thickness", 0.3)), 3)
+            bi_ref["has_battlements"] = bool(bparams.get("has_battlements", 0))
+            bi_ref["has_arch"] = bool(bparams.get("has_arch", 0))
+            bi_ref["column_count"] = int(bparams.get("column_count", 0))
+            bi_ref["subdivision"] = int(bparams.get("subdivision", 1))
+            # Door spec
+            ds = bparams.get("door_spec", {})
+            if isinstance(ds, dict):
+                bi_ref["door_width"] = round(float(ds.get("width", 1.0)), 2)
+                bi_ref["door_height"] = round(float(ds.get("height", 2.0)), 2)
+            else:
+                bi_ref["door_width"] = round(float(bparams.get("door_width", 1.0)), 2)
+                bi_ref["door_height"] = round(float(bparams.get("door_height", 2.0)), 2)
+            # Window spec
+            ws = bparams.get("win_spec", {})
+            if isinstance(ws, dict):
+                bi_ref["win_width"] = round(float(ws.get("width", 0.6)), 2)
+                bi_ref["win_height"] = round(float(ws.get("height", 0.8)), 2)
+                bi_ref["win_density"] = round(float(ws.get("density", 0.3)), 3)
+            else:
+                bi_ref["win_width"] = round(float(bparams.get("win_width", 0.6)), 2)
+                bi_ref["win_height"] = round(float(bparams.get("win_height", 0.8)), 2)
+                bi_ref["win_density"] = round(float(bparams.get("win_density", 0.3)), 3)
+            bi_ref["window_shape"] = int(bparams.get("window_shape", 0))
+            bi_ref["window_shape_name"] = _WIN_SHAPE_NAMES.get(
+                int(bparams.get("window_shape", 0)), "rectangular")
 
         final_yaw = effective_yaw.get(bi, slot.yaw_deg)
 
@@ -3729,9 +4028,29 @@ def generate_level(
     if layout_type == "organic":
         print(f"  Anchor    : {anchor_style}")
 
+    # ── Mesh cleanup: fix normals, remove degenerate geometry ─────
+    for _gname, geom in scene.geometry.items():
+        if isinstance(geom, trimesh.Trimesh):
+            geom.merge_vertices()
+            # Remove degenerate faces (zero area)
+            mask = geom.nondegenerate_faces()
+            if not mask.all():
+                geom.update_faces(mask)
+            trimesh.repair.fix_normals(geom)
+
+    # ── Build and store placement JSON ─────────────────────────────
+    placement = export_placement_json(
+        building_infos, road_graph, style, layout_type, aw, ad, seed)
+    scene.metadata["placement"] = placement
+
     if output_path:
         scene.export(output_path)
         print(f"  Output    : {output_path}")
+        # Also export placement JSON alongside GLB
+        json_path = output_path.replace(".glb", "_placement.json")
+        Path(json_path).write_text(
+            json.dumps(placement, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"  Placement : {json_path}")
 
     return scene
 
