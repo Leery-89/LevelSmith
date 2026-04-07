@@ -1,0 +1,20 @@
+{
+  "dataset_size": 340,
+  "n_families": 10,
+  "n_intents": 7,
+  "split": {
+    "train": 272,
+    "val": 34,
+    "test": 34
+  },
+  "best_epoch": 38,
+  "metrics": {
+    "best_val_fam_acc": 0.6470588445663452,
+    "test_fam_top1": 0.5882353186607361,
+    "test_fam_top2": 0.7647058963775635,
+    "test_fam_top3": 0.8235294222831726,
+    "test_intent_top1": 0.5882353186607361
+  },
+  "inference_ms_cpu": 9.12508487701416,
+  "model_params": 6545
+}
