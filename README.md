@@ -30,6 +30,10 @@ The system is built around four specialized AI agents, each responsible for one 
 
 ## Prompt → 3D pipeline
 
+<p align="center">
+  <img src="training/docs/images/pipeline_overview.png" alt="LevelSmith Pipeline" width="600"/>
+</p>
+
 ```mermaid
 flowchart LR
     subgraph Parse["Prompt parsing"]
