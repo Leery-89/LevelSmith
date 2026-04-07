@@ -416,6 +416,10 @@ def run_generation(zones: list, min_gap: float, seed: int,
 
     json_kb = round(json_path.stat().st_size / 1024, 1) if json_path.exists() else 0
 
+    # Pull coverage_ratio from placement metadata if available
+    placement = meta.get("placement") or {}
+    coverage_ratio = (placement.get("metadata") or {}).get("coverage_ratio", 0.0)
+
     return {
         "glb_url": f"/download/{glb_path.name}",
         "json_url": f"/download/{json_path.name}",
@@ -424,6 +428,8 @@ def run_generation(zones: list, min_gap: float, seed: int,
             "vertices": total_verts,
             "meshes": len(merged.geometry),
             "zones": len(zones),
+            "building_count": len(binfos_out),
+            "coverage": coverage_ratio,
             "glb_kb": round(glb_path.stat().st_size / 1024, 1),
             "json_kb": json_kb,
             "time_s": round(elapsed, 2),

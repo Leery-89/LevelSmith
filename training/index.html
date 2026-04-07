@@ -6,142 +6,350 @@
 <title>LevelSmith</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #eee; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-  /* Header */
-  .header { background: #16213e; padding: 16px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #0f3460; }
-  .header h1 { font-size: 20px; color: #e94560; white-space: nowrap; }
+  /* ── Toolbar ───────────────────────────────────────────── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 40px;
+    padding: 0 16px;
+    background: #1a1a2e;
+    border-bottom: 1px solid #2a2a4a;
+    flex-shrink: 0;
+  }
+  .scene-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e94560;
+  }
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .tool-btn {
+    background: #2a2a4a;
+    border: none;
+    color: #8892b0;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .tool-btn:hover {
+    background: #3a3a5a;
+    color: #ccd6f6;
+  }
+  .tool-btn:disabled {
+    color: #444;
+    cursor: not-allowed;
+  }
+  .seed-label {
+    color: #6272a4;
+    font-size: 11px;
+    font-family: monospace;
+    margin-left: 8px;
+  }
 
-  /* Controls */
-  .controls { padding: 16px 24px; background: #16213e; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-  .field { display: flex; flex-direction: column; gap: 4px; }
-  .field label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-  .field input, .field select { background: #0f3460; border: 1px solid #333; color: #eee; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
-  .field input:focus, .field select:focus { outline: none; border-color: #e94560; }
-  .prompt-field { flex: 1; min-width: 300px; }
-  .prompt-field input { width: 100%; }
-
-  .btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: 600; transition: all 0.15s; }
-  .btn-primary { background: #e94560; color: #fff; }
-  .btn-primary:hover { background: #c73652; }
-  .btn-primary:disabled { background: #555; cursor: not-allowed; }
-  .btn-secondary { background: #0f3460; color: #eee; border: 1px solid #333; }
-  .btn-secondary:hover { background: #1a4a8a; }
-
-  /* Main layout */
-  .main { display: flex; height: calc(100vh - 130px); }
+  /* ── Main (viewer + sidebar) ───────────────────────────── */
+  .main {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
 
   /* 3D Viewer */
-  .viewer { flex: 1; position: relative; background: #111; }
-  .viewer canvas { width: 100% !important; height: 100% !important; display: block; }
-  .viewer-overlay { position: absolute; bottom: 12px; left: 12px; display: flex; gap: 8px; }
+  .viewer {
+    flex: 1;
+    position: relative;
+    background: #111;
+    overflow: hidden;
+  }
+  .viewer canvas { display: block; }
 
-  /* Sidebar */
-  .sidebar { width: 280px; background: #16213e; padding: 16px; overflow-y: auto; border-left: 1px solid #0f3460; }
-  .sidebar h3 { font-size: 13px; color: #888; text-transform: uppercase; margin-bottom: 8px; }
-  .stat { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; border-bottom: 1px solid #1a1a2e; }
-  .stat-val { color: #e94560; font-weight: 600; }
-  .parsed-info { margin-top: 16px; font-size: 12px; background: #0f3460; padding: 10px; border-radius: 6px; }
-  .parsed-info code { color: #4fc3f7; }
-
-  /* Loading */
-  .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
-  .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: #e94560; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Empty state */
-  .empty-state { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #555; }
+  .empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #555;
+    pointer-events: none;
+  }
   .empty-state p { font-size: 14px; margin-top: 8px; }
 
-  /* Archetype plan */
-  .arch-identity { margin-bottom: 8px; }
-  .arch-theme { display: block; color: #e94560; font-weight: 600; font-size: 13px; }
-  .arch-desc { display: block; color: #8892b0; font-size: 11px; margin-top: 2px; }
-  .arch-buildings { margin: 6px 0; }
-  .arch-building { display: flex; align-items: center; gap: 6px; padding: 2px 0; font-size: 11px; }
-  .arch-role { font-size: 10px; min-width: 70px; }
-  .arch-type { color: #ccd6f6; flex: 1; }
-  .arch-scale { color: #6272a4; font-size: 10px; }
-  .arch-relations { margin: 8px 0; border-top: 1px solid #2a2a4a; padding-top: 6px; }
-  .arch-label { color: #6272a4; font-size: 10px; text-transform: uppercase; margin-bottom: 4px; }
-  .arch-rel { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 0; }
-  .arch-rel-ids { color: #8892b0; font-family: monospace; }
-  .arch-rel-type { color: #4ecdc4; font-size: 10px; }
-  .arch-meta { margin: 8px 0; border-top: 1px solid #2a2a4a; padding-top: 6px; }
-  .arch-meta-line { color: #8892b0; font-size: 11px; padding: 1px 0; }
-  .arch-validation { margin-top: 6px; font-size: 11px; font-weight: 600; }
-  .arch-error { color: #e94560; font-size: 10px; }
+  .loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #333;
+    border-top-color: #e94560;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Sidebar (right column) */
+  .sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    background: #16213e;
+    border-left: 1px solid #2a2a4a;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* ── Scene Info (top of sidebar) ───────────────────────── */
+  .scene-info {
+    padding: 12px 16px;
+    border-bottom: 1px solid #2a2a4a;
+    flex-shrink: 0;
+  }
+  .scene-info h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #6272a4;
+    margin: 0 0 8px 0;
+    letter-spacing: 1px;
+  }
+  .info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    gap: 8px;
+  }
+  .info-label {
+    color: #6272a4;
+    flex-shrink: 0;
+  }
+  .info-value {
+    color: #ccd6f6;
+    font-weight: 500;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Chat Panel (bottom of sidebar) ────────────────────── */
+  .chat-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  .chat-history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .chat-msg {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 90%;
+    white-space: pre-line;
+    word-wrap: break-word;
+  }
+  .chat-msg.user {
+    background: #2a2a4a;
+    color: #ccd6f6;
+    align-self: flex-end;
+    border-bottom-right-radius: 2px;
+  }
+  .chat-msg.assistant {
+    background: #16213e;
+    color: #8892b0;
+    align-self: flex-start;
+    border: 1px solid #2a2a4a;
+    border-bottom-left-radius: 2px;
+  }
+  .chat-msg.system {
+    background: transparent;
+    color: #6272a4;
+    font-style: italic;
+    align-self: center;
+    text-align: center;
+    font-size: 12px;
+  }
+  .chat-msg.assistant .pending {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border: 2px solid #444;
+    border-top-color: #e94560;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .chat-input-area {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    border-top: 1px solid #2a2a4a;
+    flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1;
+    background: #0f1626;
+    border: 1px solid #2a2a4a;
+    color: #ccd6f6;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 13px;
+    resize: none;
+    font-family: inherit;
+  }
+  .chat-input:focus {
+    outline: none;
+    border-color: #e94560;
+  }
+  .chat-input:disabled {
+    background: #0a1020;
+    color: #555;
+  }
+  .chat-send {
+    background: #e94560;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    align-self: stretch;
+  }
+  .chat-send:hover { background: #d63851; }
+  .chat-send:disabled { background: #444; cursor: not-allowed; }
+
+  /* ── Export Bar (bottom) ───────────────────────────────── */
+  .export-bar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    height: 48px;
+    padding: 0 16px;
+    background: #1a1a2e;
+    border-top: 1px solid #2a2a4a;
+    flex-shrink: 0;
+  }
+  .export-btn {
+    background: #2a2a4a;
+    color: #ccd6f6;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .export-btn:hover {
+    background: #3a3a5a;
+  }
+  .export-empty {
+    color: #444;
+    font-size: 12px;
+    font-style: italic;
+  }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>LevelSmith</h1>
-  <span style="color:#666; font-size:13px;">AI-Powered Level Generator</span>
+<!-- ── Toolbar ─────────────────────────────────────── -->
+<div class="toolbar">
+  <span class="scene-name" id="sceneName">LevelSmith</span>
+  <div class="toolbar-actions">
+    <button id="btnRegenerate" class="tool-btn" title="Regenerate with new seed" disabled>⟳ Regenerate</button>
+    <button id="btnReset" class="tool-btn" title="Clear scene and chat">✕ Reset</button>
+    <span class="seed-label" id="seedLabel"></span>
+  </div>
 </div>
 
-<div class="controls">
-  <div class="field prompt-field">
-    <label>Prompt</label>
-    <input id="prompt" type="text" placeholder="describe the level you want to build (style, layout, atmosphere are inferred automatically)" value="medieval fortress on a hilltop">
-  </div>
-  <div class="field">
-    <label>Count</label>
-    <input id="count" type="number" min="3" max="30" value="" placeholder="Auto" style="width:70px;">
-  </div>
-  <button id="genBtn" class="btn btn-primary">Generate</button>
-</div>
-
+<!-- ── Main: viewer + sidebar ──────────────────────── -->
 <div class="main">
   <div class="viewer" id="viewer">
     <div class="empty-state" id="emptyState">
       <div style="font-size:48px;opacity:0.3;">&#127984;</div>
-      <p>Enter a prompt and click Generate</p>
+      <p>Describe a scene in the chat panel to start</p>
     </div>
     <div class="loading" id="loading" style="display:none;">
       <div class="spinner"></div>
       <div>Generating level...</div>
     </div>
-    <div class="viewer-overlay" id="dlButtons" style="display:none;">
-      <a id="dlGlb" class="btn btn-secondary" download>Download GLB (Preview)</a>
-      <a id="dlJson" class="btn btn-secondary" download>Download JSON (UE5)</a>
-    </div>
   </div>
 
   <div class="sidebar" id="sidebar">
-    <h3>Statistics</h3>
-    <div id="stats">
-      <div class="stat"><span>Faces</span><span class="stat-val" id="s-faces">-</span></div>
-      <div class="stat"><span>Vertices</span><span class="stat-val" id="s-verts">-</span></div>
-      <div class="stat"><span>Meshes</span><span class="stat-val" id="s-meshes">-</span></div>
-      <div class="stat"><span>GLB size</span><span class="stat-val" id="s-glb">-</span></div>
-      <div class="stat"><span>JSON size</span><span class="stat-val" id="s-json">-</span></div>
-      <div class="stat"><span>Time</span><span class="stat-val" id="s-time">-</span></div>
-      <div class="stat"><span>Clusters</span><span class="stat-val" id="s-clusters">-</span></div>
-      <div class="stat"><span>Roads</span><span class="stat-val" id="s-roads">-</span></div>
+
+    <!-- Scene Info -->
+    <div class="scene-info" id="sceneInfo">
+      <h3>Scene</h3>
+      <div class="info-grid">
+        <div class="info-row"><span class="info-label">Style</span><span class="info-value" id="infoStyle">—</span></div>
+        <div class="info-row"><span class="info-label">Layout</span><span class="info-value" id="infoLayout">—</span></div>
+        <div class="info-row"><span class="info-label">Family</span><span class="info-value" id="infoFamily">—</span></div>
+        <div class="info-row"><span class="info-label">Buildings</span><span class="info-value" id="infoCount">—</span></div>
+        <div class="info-row"><span class="info-label">Coverage</span><span class="info-value" id="infoCoverage">—</span></div>
+        <div class="info-row"><span class="info-label">Roles</span><span class="info-value" id="infoRoles">—</span></div>
+      </div>
     </div>
-    <div class="parsed-info" id="classificationInfo" style="display:none;">
-      <h3 style="margin-bottom:6px;">Classification</h3>
-      <div id="classificationContent"></div>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel" id="chatPanel">
+      <div class="chat-history" id="chatHistory">
+        <div class="chat-msg system">描述你想要的场景开始生成
+生成后可以用自然语言修改：
+"主建筑再高一点"
+"增加一个塔楼"
+"入口改到南边"</div>
+      </div>
+      <div class="chat-input-area">
+        <textarea id="chatInput" class="chat-input" placeholder="describe a scene or ask for an edit..." rows="2"></textarea>
+        <button id="chatSend" class="chat-send">Send</button>
+      </div>
     </div>
-    <div class="parsed-info" id="parsedInfo" style="display:none;">
-      <h3 style="margin-bottom:6px;">Parsed Parameters</h3>
-      <div id="parsedContent"></div>
-    </div>
-    <div class="parsed-info" id="archetypeSection" style="display:none;">
-      <h3 style="margin-bottom:6px;">Archetype Plan</h3>
-      <div id="archetypeContent"></div>
-    </div>
-    <div class="parsed-info" id="buildingInfo" style="display:none;">
-      <h3 style="margin-bottom:6px;">Buildings</h3>
-      <div id="buildingList" style="font-size:11px; max-height:200px; overflow-y:auto;"></div>
-    </div>
-    <!-- Reserved for future conversational agent: chat history goes here -->
-    <div id="chatHistory" style="display:none;"></div>
+
   </div>
 </div>
 
-<!-- Three.js via importmap (avoids duplicate script tags) -->
+<!-- ── Export Bar ──────────────────────────────────── -->
+<div class="export-bar" id="exportBar">
+  <a id="dlGlb" class="export-btn" download style="display:none;">Download GLB (Preview)</a>
+  <a id="dlJson" class="export-btn" download style="display:none;">Download JSON (UE5)</a>
+  <span id="exportEmpty" class="export-empty">no scene yet</span>
+</div>
+
+<!-- ── Three.js (importmap) ────────────────────────── -->
 <script type="importmap">
 {
   "imports": {
@@ -155,7 +363,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// ── Three.js setup ──
+// ── State ─────────────────────────────────────────
+let conversationHistory = [];   // [{role, content}]
+let currentScene = null;         // last successful response data
+let firstPrompt = null;          // remember the very first user prompt for Regenerate
+
+// ── Three.js setup ────────────────────────────────
 let scene, camera, renderer, controls, currentModel;
 const viewerEl = document.getElementById('viewer');
 
@@ -176,22 +389,23 @@ function initThree() {
   controls.enableDamping = true;
   controls.target.set(50, 3, 50);
 
-  // Lights
   const amb = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(amb);
   const dir = new THREE.DirectionalLight(0xffffff, 1.0);
   dir.position.set(80, 120, 60);
-  dir.castShadow = false;
   scene.add(dir);
   const fill = new THREE.DirectionalLight(0x8888ff, 0.3);
   fill.position.set(-40, 60, -30);
   scene.add(fill);
 
-  // Grid
   const grid = new THREE.GridHelper(200, 20, 0x333355, 0x222244);
   scene.add(grid);
 
   animate();
+
+  // ResizeObserver handles flex layout shifts (more reliable than window resize)
+  const ro = new ResizeObserver(onResize);
+  ro.observe(viewerEl);
   window.addEventListener('resize', onResize);
 }
 
@@ -202,9 +416,12 @@ function animate() {
 }
 
 function onResize() {
-  camera.aspect = viewerEl.clientWidth / viewerEl.clientHeight;
+  const w = viewerEl.clientWidth;
+  const h = viewerEl.clientHeight;
+  if (w === 0 || h === 0) return;
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  renderer.setSize(viewerEl.clientWidth, viewerEl.clientHeight);
+  renderer.setSize(w, h);
 }
 
 function loadGLB(url) {
@@ -213,7 +430,6 @@ function loadGLB(url) {
     if (currentModel) scene.remove(currentModel);
     currentModel = gltf.scene;
 
-    // Enable vertex colors
     currentModel.traverse((child) => {
       if (child.isMesh) {
         child.material = new THREE.MeshStandardMaterial({
@@ -226,7 +442,6 @@ function loadGLB(url) {
 
     scene.add(currentModel);
 
-    // Fit camera
     const box = new THREE.Box3().setFromObject(currentModel);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -234,208 +449,228 @@ function loadGLB(url) {
     camera.position.set(center.x + maxDim * 0.8, center.y + maxDim * 0.5, center.z + maxDim * 0.8);
     controls.target.copy(center);
     controls.update();
+
+    document.getElementById('emptyState').style.display = 'none';
   });
 }
 
-// ── Archetype plan renderer ──
-function renderArchetypePlan(plan) {
-  const container = document.getElementById('archetypeContent');
-  let html = '';
-
-  // Archetype title
-  if (plan.archetype) {
-    html += `<div class="arch-identity">`;
-    html += `<span class="arch-theme">${plan.archetype.replace(/_/g, ' ')}</span>`;
-    if (plan.description) {
-      html += `<span class="arch-desc">${plan.description}</span>`;
-    }
-    html += `</div>`;
+// ── Chat helpers ──────────────────────────────────
+function appendMessage(role, content) {
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  if (typeof content === 'string') {
+    div.textContent = content;
+  } else {
+    div.appendChild(content);
   }
-
-  // Building roles
-  if (plan.buildings && plan.buildings.length > 0) {
-    const roleOrder = {primary: 0, secondary: 1, tertiary: 2, ambient: 3};
-    const sorted = [...plan.buildings].sort((a,b) =>
-      (roleOrder[a.role]||9) - (roleOrder[b.role]||9));
-    const roleColors = {
-      primary: '#e94560', secondary: '#4ecdc4',
-      tertiary: '#95a5a6', ambient: '#7c6f64',
-    };
-    html += '<div class="arch-buildings">';
-    for (const b of sorted) {
-      const color = roleColors[b.role] || '#95a5a6';
-      const count = (b.count && b.count > 1) ? ` x${b.count}` : '';
-      html += `<div class="arch-building">
-        <span class="arch-role" style="color:${color}">${b.role}</span>
-        <span class="arch-type">${b.label || b.building_type || ''}${count}</span>
-        <span class="arch-scale">${b.style_key || ''}</span>
-      </div>`;
-    }
-    html += '</div>';
-  }
-
-  // Spatial rules
-  if (plan.spatial_rules && plan.spatial_rules.length > 0) {
-    html += '<div class="arch-relations">';
-    html += '<div class="arch-label">Spatial Rules</div>';
-    for (const r of plan.spatial_rules) {
-      if (typeof r === 'string') {
-        html += `<div class="arch-meta-line">${r}</div>`;
-      } else {
-        html += `<div class="arch-rel">
-          <span class="arch-rel-ids">${r.from} &rarr; ${r.to}</span>
-          <span class="arch-rel-type">${r.relation}</span>
-        </div>`;
-      }
-    }
-    html += '</div>';
-  }
-
-  // Meta: enclosure + road + atmosphere
-  const meta = [];
-  if (plan.enclosure) meta.push(`Enclosure: ${plan.enclosure.type}`);
-  if (plan.road_preference) meta.push(`Roads: ${plan.road_preference.layout_type}`);
-  if (plan.atmosphere) {
-    const a = plan.atmosphere;
-    const parts = [a.density_feel, a.lighting, a.condition].filter(Boolean);
-    if (parts.length) meta.push(`Feel: ${parts.join(', ')}`);
-  }
-  if (meta.length > 0) {
-    html += '<div class="arch-meta">';
-    for (const m of meta) html += `<div class="arch-meta-line">${m}</div>`;
-    html += '</div>';
-  }
-
-  container.innerHTML = html;
+  const history = document.getElementById('chatHistory');
+  history.appendChild(div);
+  history.scrollTop = history.scrollHeight;
+  return div;
 }
 
-// ── Generate ──
-async function doGenerate() {
-  const btn = document.getElementById('genBtn');
-  const loading = document.getElementById('loading');
-  const empty = document.getElementById('emptyState');
-  const dlBtns = document.getElementById('dlButtons');
+function appendPendingMessage(text) {
+  const span = document.createElement('span');
+  span.innerHTML = `<span class="pending"></span>${text}`;
+  return appendMessage('assistant', span);
+}
 
-  btn.disabled = true;
-  btn.textContent = 'Generating...';
-  loading.style.display = 'block';
-  empty.style.display = 'none';
-  dlBtns.style.display = 'none';
+function setInputEnabled(enabled) {
+  document.getElementById('chatInput').disabled = !enabled;
+  document.getElementById('chatSend').disabled = !enabled;
+}
 
-  // Style + layout are inferred server-side from the prompt (classifier or
-  // regex). Client only sends prompt + optional count.
-  const body = { prompt: document.getElementById('prompt').value };
-  const count = document.getElementById('count').value;
-  if (count) body.count = parseInt(count);
+// ── Scene info / toolbar updates ──────────────────
+function updateSceneInfo(data) {
+  const zone0 = (data.parsed && data.parsed.zones && data.parsed.zones[0]) || {};
+  const s = data.stats || {};
+  const c = data.classification || {};
+
+  document.getElementById('infoStyle').textContent = zone0.style || '—';
+  document.getElementById('infoLayout').textContent = zone0.layout || '—';
+  document.getElementById('infoFamily').textContent =
+    c.family ? `${c.family} (${(c.confidence * 100).toFixed(0)}%)` : '—';
+  document.getElementById('infoCount').textContent = s.building_count || '—';
+  document.getElementById('infoCoverage').textContent =
+    (s.coverage != null) ? `${(s.coverage * 100).toFixed(1)}%` : '—';
+
+  // Roles: 1P 2S 3T 2A
+  const roles = (data.building_infos || []).reduce((acc, b) => {
+    const r = b.role || 'unknown';
+    acc[r] = (acc[r] || 0) + 1;
+    return acc;
+  }, {});
+  const order = ['primary', 'secondary', 'tertiary', 'ambient'];
+  const parts = order
+    .filter(r => roles[r])
+    .map(r => `${roles[r]}${r[0].toUpperCase()}`);
+  document.getElementById('infoRoles').textContent = parts.length ? parts.join(' ') : '—';
+}
+
+function updateToolbar(data) {
+  const zone0 = (data.parsed && data.parsed.zones && data.parsed.zones[0]) || {};
+  const name = zone0.style || 'Scene';
+  document.getElementById('sceneName').textContent = name.replace(/_/g, ' ');
+  const seed = data.parsed && data.parsed.seed;
+  document.getElementById('seedLabel').textContent = (seed != null) ? `seed: ${seed}` : '';
+  document.getElementById('btnRegenerate').disabled = false;
+}
+
+function updateDownloadLinks(data) {
+  const dlGlb = document.getElementById('dlGlb');
+  const dlJson = document.getElementById('dlJson');
+  dlGlb.href = data.glb_url;
+  dlJson.href = data.json_url;
+  dlGlb.style.display = '';
+  dlJson.style.display = '';
+  document.getElementById('exportEmpty').style.display = 'none';
+}
+
+function resetSceneInfo() {
+  ['infoStyle','infoLayout','infoFamily','infoCount','infoCoverage','infoRoles']
+    .forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('sceneName').textContent = 'LevelSmith';
+  document.getElementById('seedLabel').textContent = '';
+  document.getElementById('btnRegenerate').disabled = true;
+  document.getElementById('dlGlb').style.display = 'none';
+  document.getElementById('dlJson').style.display = 'none';
+  document.getElementById('exportEmpty').style.display = '';
+  if (currentModel) {
+    scene.remove(currentModel);
+    currentModel = null;
+  }
+  document.getElementById('emptyState').style.display = '';
+}
+
+// ── Generation / editing flow ─────────────────────
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  appendMessage('user', msg);
+  input.value = '';
+  setInputEnabled(false);
+
+  conversationHistory.push({ role: 'user', content: msg });
+  if (firstPrompt == null) firstPrompt = msg;
+
+  let pendingMsg;
 
   try {
-    const resp = await fetch('/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.detail || 'Generation failed');
-    }
-    const data = await resp.json();
+    if (!currentScene) {
+      // ── First turn → /generate ──
+      pendingMsg = appendPendingMessage('正在生成场景...');
+      document.getElementById('loading').style.display = 'block';
 
-    // Update stats
-    document.getElementById('s-faces').textContent = data.stats.faces.toLocaleString();
-    document.getElementById('s-verts').textContent = data.stats.vertices.toLocaleString();
-    document.getElementById('s-meshes').textContent = data.stats.meshes;
-    document.getElementById('s-glb').textContent = data.stats.glb_kb + ' KB';
-    document.getElementById('s-json').textContent = data.stats.json_kb + ' KB';
-    document.getElementById('s-time').textContent = data.stats.time_s + 's';
+      const resp = await fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: msg }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+      currentScene = data;
 
-    // Update cluster/road stats
-    const cls = data.clusters || [];
-    const clSizes = cls.map(c => c.size).join(', ');
-    document.getElementById('s-clusters').textContent =
-      cls.length + (clSizes ? ` (${clSizes})` : '');
-    const rg = data.road_graph || {};
-    document.getElementById('s-roads').textContent =
-      rg.renderable ? 'rendered' : 'data-only';
+      loadGLB(data.glb_url);
+      updateSceneInfo(data);
+      updateToolbar(data);
+      updateDownloadLinks(data);
 
-    // Building info panel
-    const bInfoDiv = document.getElementById('buildingInfo');
-    const bList = document.getElementById('buildingList');
-    const binfos = data.building_infos || [];
-    if (binfos.length > 0) {
-      bInfoDiv.style.display = 'block';
-      bList.innerHTML = binfos.map(b => {
-        const main = b.is_main ? ' <b>main</b>' : '';
-        return `<div>B${b.idx}: ${b.yaw_deg}&deg;, cl${b.cluster_id}${main}</div>`;
-      }).join('');
+      pendingMsg.remove();
+      const summary =
+        `✓ scene generated\n` +
+        `${data.stats.building_count} buildings · ` +
+        `${(data.stats.coverage * 100).toFixed(1)}% coverage\n` +
+        `style: ${(data.parsed.zones[0] || {}).style || '?'} · ` +
+        `layout: ${(data.parsed.zones[0] || {}).layout || '?'}\n` +
+        `you can now describe edits in natural language`;
+      appendMessage('assistant', summary);
+      conversationHistory.push({ role: 'assistant', content: summary });
+
     } else {
-      bInfoDiv.style.display = 'none';
+      // ── Subsequent turns → /edit (not implemented yet) ──
+      pendingMsg = appendPendingMessage('正在修改...');
+
+      const resp = await fetch('/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instruction: msg,
+          conversation_history: conversationHistory,
+          current_scene: { glb_url: currentScene.glb_url, json_url: currentScene.json_url },
+        }),
+      });
+
+      pendingMsg.remove();
+
+      if (resp.ok) {
+        const data = await resp.json();
+        currentScene = data;
+        loadGLB(data.glb_url);
+        updateSceneInfo(data);
+        updateToolbar(data);
+        updateDownloadLinks(data);
+        const text = `✓ updated\n${data.edit_summary || ''}`;
+        appendMessage('assistant', text);
+        conversationHistory.push({ role: 'assistant', content: text });
+      } else {
+        const text = '修改功能即将上线 (edit endpoint not implemented yet)';
+        appendMessage('assistant', text);
+        conversationHistory.push({ role: 'assistant', content: text });
+      }
     }
-
-    // Classification (graph_family + intent)
-    const ci = document.getElementById('classificationInfo');
-    if (data.classification) {
-      ci.style.display = 'block';
-      const c = data.classification;
-      const top3Html = (c.top3 || [])
-        .map(([fam, p]) => `<div><code>${fam}</code> <span style="color:#888">${(p*100).toFixed(0)}%</span></div>`)
-        .join('');
-      const confirmed = c.deepseek_confirmed
-        ? '<div style="color:#4ecdc4;font-size:10px;">verified by DeepSeek</div>' : '';
-      document.getElementById('classificationContent').innerHTML =
-        `<div><code>family</code>: <strong>${c.family}</strong>
-           <span style="color:#888">(${(c.confidence*100).toFixed(0)}%)</span></div>
-         <div><code>intent</code>: <strong>${c.intent}</strong>
-           <span style="color:#888">(${(c.intent_confidence*100).toFixed(0)}%)</span></div>
-         <div style="margin-top:6px;color:#6272a4;font-size:10px;text-transform:uppercase;">top-3</div>
-         ${top3Html}
-         ${confirmed}`;
-    } else {
-      ci.style.display = 'none';
-    }
-
-    // Update parsed info
-    const pi = document.getElementById('parsedInfo');
-    pi.style.display = 'block';
-    document.getElementById('parsedContent').innerHTML =
-      Object.entries(data.parsed).map(([k,v]) =>
-        `<div><code>${k}</code>: <strong>${v}</strong></div>`
-      ).join('');
-
-    // Archetype plan
-    if (data.archetype_plan) {
-      document.getElementById('archetypeSection').style.display = 'block';
-      renderArchetypePlan(data.archetype_plan);
-    } else {
-      document.getElementById('archetypeSection').style.display = 'none';
-    }
-
-    // Download buttons
-    const dlGlb = document.getElementById('dlGlb');
-    const dlJson = document.getElementById('dlJson');
-    dlGlb.href = data.glb_url;
-    dlJson.href = data.json_url;
-    dlBtns.style.display = 'flex';
-
-    // Load 3D preview
-    loadGLB(data.glb_url);
-
-  } catch (e) {
-    alert('Error: ' + e.message);
+  } catch (err) {
+    if (pendingMsg) pendingMsg.remove();
+    appendMessage('assistant', `error: ${err.message}`);
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Generate';
-    loading.style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
+    setInputEnabled(true);
+    document.getElementById('chatInput').focus();
   }
-};
+}
 
-// ── Init ──
+// ── Reset / Regenerate ────────────────────────────
+function resetAll() {
+  currentScene = null;
+  conversationHistory = [];
+  firstPrompt = null;
+  document.getElementById('chatHistory').innerHTML = `
+    <div class="chat-msg system">描述你想要的场景开始生成
+生成后可以用自然语言修改：
+"主建筑再高一点"
+"增加一个塔楼"
+"入口改到南边"</div>
+  `;
+  resetSceneInfo();
+}
+
+function regenerate() {
+  if (!firstPrompt) return;
+  // Drop currentScene so the next sendMessage takes the /generate branch.
+  currentScene = null;
+  document.getElementById('chatInput').value = firstPrompt;
+  sendMessage();
+}
+
+// ── Init + bindings ───────────────────────────────
 initThree();
 
-// Bind generate button + Enter key
-document.getElementById('genBtn').addEventListener('click', doGenerate);
-document.getElementById('prompt').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') doGenerate();
+document.getElementById('chatSend').addEventListener('click', sendMessage);
+document.getElementById('chatInput').addEventListener('keydown', (e) => {
+  // Enter sends, Shift+Enter inserts newline
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
 });
+document.getElementById('btnRegenerate').addEventListener('click', regenerate);
+document.getElementById('btnReset').addEventListener('click', resetAll);
+
+document.getElementById('chatInput').focus();
 </script>
 </body>
 </html>
