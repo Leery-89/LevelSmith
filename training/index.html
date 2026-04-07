@@ -490,7 +490,15 @@ function updateSceneInfo(data) {
   document.getElementById('infoLayout').textContent = zone0.layout || '—';
   document.getElementById('infoFamily').textContent =
     c.family ? `${c.family} (${(c.confidence * 100).toFixed(0)}%)` : '—';
-  document.getElementById('infoCount').textContent = s.building_count || '—';
+
+  // Use != null (not ||) so building_count=0 still displays.
+  // Fall back to building_infos.length if api.py doesn't include the field.
+  const count = (s.building_count != null)
+    ? s.building_count
+    : (data.building_infos || []).length;
+  document.getElementById('infoCount').textContent =
+    (count > 0 || s.building_count === 0) ? count : '—';
+
   document.getElementById('infoCoverage').textContent =
     (s.coverage != null) ? `${(s.coverage * 100).toFixed(1)}%` : '—';
 
@@ -573,6 +581,9 @@ async function sendMessage() {
         throw new Error(err.detail || `HTTP ${resp.status}`);
       }
       const data = await resp.json();
+      // Debug: dump the full response so the actual field paths are visible
+      // in the browser console (helpful when api.py changes shape).
+      console.log('API /generate response:', JSON.stringify(data, null, 2));
       currentScene = data;
 
       loadGLB(data.glb_url);
@@ -581,13 +592,19 @@ async function sendMessage() {
       updateDownloadLinks(data);
 
       pendingMsg.remove();
+      // Defensive field access — falls back gracefully if api.py is on an
+      // older revision and doesn't yet return building_count / coverage.
+      const stats = data.stats || {};
+      const count = (stats.building_count != null)
+        ? stats.building_count
+        : (data.building_infos || []).length;
+      const cov = (stats.coverage != null)
+        ? `${(stats.coverage * 100).toFixed(1)}%`
+        : '?';
       const summary =
-        `✓ scene generated\n` +
-        `${data.stats.building_count} buildings · ` +
-        `${(data.stats.coverage * 100).toFixed(1)}% coverage\n` +
-        `style: ${(data.parsed.zones[0] || {}).style || '?'} · ` +
-        `layout: ${(data.parsed.zones[0] || {}).layout || '?'}\n` +
-        `you can now describe edits in natural language`;
+        `✓ 场景已生成\n` +
+        `${count} 栋建筑 · ${cov} 覆盖率\n` +
+        `可以继续描述修改`;
       appendMessage('assistant', summary);
       conversationHistory.push({ role: 'assistant', content: summary });
 
