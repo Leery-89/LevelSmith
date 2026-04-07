@@ -45,12 +45,15 @@ app = FastAPI(title="LevelSmith", version="2.0")
 # ═══════════════════════════════════════════════════════════════════
 
 class GenerateRequest(BaseModel):
-    prompt: str = "medieval village, 10 buildings, street layout"
+    prompt: str = "medieval fortress on a hilltop"
     style: Optional[str] = None
     count: Optional[int] = None
     layout: Optional[str] = None
     min_gap: Optional[float] = None
     seed: Optional[int] = None
+    # Reserved for future conversational agent: list of prior turns to give the
+    # backend context for delta edits ("make it bigger", "add a chapel", etc.)
+    conversation_history: list = []
 
 
 class GenerateResponse(BaseModel):
@@ -62,6 +65,7 @@ class GenerateResponse(BaseModel):
     road_graph: dict = {}
     building_infos: list = []
     archetype_plan: Optional[dict] = None
+    classification: Optional[dict] = None
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -489,12 +493,27 @@ async def generate(req: GenerateRequest):
             graph_name = gname
             break
 
-    # 5. Generate
+    # 5. Classify prompt → graph_family + intent (optional, model may be missing)
+    classification = None
+    try:
+        from prompt_classifier import classify_prompt
+        primary_style = zones[0]["style"] if zones else None
+        classification = classify_prompt(req.prompt, style=primary_style)
+        if classification:
+            print(f"[CLASSIFIER] family={classification['family']} "
+                  f"intent={classification['intent']} "
+                  f"conf={classification['confidence']:.2f}"
+                  + (" (deepseek-confirmed)" if classification.get("deepseek_confirmed") else ""))
+    except Exception as e:
+        print(f"[CLASSIFIER] skipped: {e}")
+
+    # 6. Generate
     arch_plan = parsed.get("archetype_plan")
     result = run_generation(zones, min_gap, seed, archetype_plan=arch_plan,
                             graph_name=graph_name)
     result["parsed"] = {"zones": zones, "min_gap": min_gap, "seed": seed}
     result["archetype_plan"] = arch_plan
+    result["classification"] = classification
     return result
 
 

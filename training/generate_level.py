@@ -45,6 +45,17 @@ STYLES = materials.STYLES
 PALETTES = materials.STYLE_PALETTES
 BASELINE_PARAMS = materials.BASELINE_PARAMS
 
+# Re-export the prompt → graph_family classifier so callers can use
+# `from generate_level import classify_prompt`. The classifier is loaded
+# lazily on first call; if model files are missing it returns None.
+try:
+    from prompt_classifier import classify_prompt, is_available as classifier_available
+except ImportError:
+    def classify_prompt(prompt, style=None):
+        return None
+    def classifier_available():
+        return False
+
 
 # ─── 平面轮廓工厂 ──────────────────────────────────────────────
 

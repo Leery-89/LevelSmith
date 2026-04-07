@@ -83,22 +83,7 @@
 <div class="controls">
   <div class="field prompt-field">
     <label>Prompt</label>
-    <input id="prompt" type="text" placeholder="medieval village, 15 buildings, compact layout" value="medieval village, 10 buildings, street layout">
-  </div>
-  <div class="field">
-    <label>Style</label>
-    <select id="style"><option value="">Auto (from prompt)</option></select>
-  </div>
-  <div class="field">
-    <label>Layout</label>
-    <select id="layout">
-      <option value="">Auto</option>
-      <option value="street">Street</option>
-      <option value="grid">Grid</option>
-      <option value="plaza">Plaza</option>
-      <option value="organic">Organic</option>
-      <option value="random">Random</option>
-    </select>
+    <input id="prompt" type="text" placeholder="describe the level you want to build (style, layout, atmosphere are inferred automatically)" value="medieval fortress on a hilltop">
   </div>
   <div class="field">
     <label>Count</label>
@@ -135,6 +120,10 @@
       <div class="stat"><span>Clusters</span><span class="stat-val" id="s-clusters">-</span></div>
       <div class="stat"><span>Roads</span><span class="stat-val" id="s-roads">-</span></div>
     </div>
+    <div class="parsed-info" id="classificationInfo" style="display:none;">
+      <h3 style="margin-bottom:6px;">Classification</h3>
+      <div id="classificationContent"></div>
+    </div>
     <div class="parsed-info" id="parsedInfo" style="display:none;">
       <h3 style="margin-bottom:6px;">Parsed Parameters</h3>
       <div id="parsedContent"></div>
@@ -147,6 +136,8 @@
       <h3 style="margin-bottom:6px;">Buildings</h3>
       <div id="buildingList" style="font-size:11px; max-height:200px; overflow-y:auto;"></div>
     </div>
+    <!-- Reserved for future conversational agent: chat history goes here -->
+    <div id="chatHistory" style="display:none;"></div>
   </div>
 </div>
 
@@ -318,23 +309,6 @@ function renderArchetypePlan(plan) {
   container.innerHTML = html;
 }
 
-// ── Load styles ──
-async function loadStyles() {
-  try {
-    const resp = await fetch('/styles');
-    const data = await resp.json();
-    const sel = document.getElementById('style');
-    data.styles.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s;
-      opt.textContent = s.replace(/_/g, ' ');
-      sel.appendChild(opt);
-    });
-  } catch (e) {
-    console.error('Failed to load styles:', e);
-  }
-}
-
 // ── Generate ──
 async function doGenerate() {
   const btn = document.getElementById('genBtn');
@@ -348,12 +322,10 @@ async function doGenerate() {
   empty.style.display = 'none';
   dlBtns.style.display = 'none';
 
+  // Style + layout are inferred server-side from the prompt (classifier or
+  // regex). Client only sends prompt + optional count.
   const body = { prompt: document.getElementById('prompt').value };
-  const style = document.getElementById('style').value;
-  const layout = document.getElementById('layout').value;
   const count = document.getElementById('count').value;
-  if (style) body.style = style;
-  if (layout) body.layout = layout;
   if (count) body.count = parseInt(count);
 
   try {
@@ -399,6 +371,28 @@ async function doGenerate() {
       bInfoDiv.style.display = 'none';
     }
 
+    // Classification (graph_family + intent)
+    const ci = document.getElementById('classificationInfo');
+    if (data.classification) {
+      ci.style.display = 'block';
+      const c = data.classification;
+      const top3Html = (c.top3 || [])
+        .map(([fam, p]) => `<div><code>${fam}</code> <span style="color:#888">${(p*100).toFixed(0)}%</span></div>`)
+        .join('');
+      const confirmed = c.deepseek_confirmed
+        ? '<div style="color:#4ecdc4;font-size:10px;">verified by DeepSeek</div>' : '';
+      document.getElementById('classificationContent').innerHTML =
+        `<div><code>family</code>: <strong>${c.family}</strong>
+           <span style="color:#888">(${(c.confidence*100).toFixed(0)}%)</span></div>
+         <div><code>intent</code>: <strong>${c.intent}</strong>
+           <span style="color:#888">(${(c.intent_confidence*100).toFixed(0)}%)</span></div>
+         <div style="margin-top:6px;color:#6272a4;font-size:10px;text-transform:uppercase;">top-3</div>
+         ${top3Html}
+         ${confirmed}`;
+    } else {
+      ci.style.display = 'none';
+    }
+
     // Update parsed info
     const pi = document.getElementById('parsedInfo');
     pi.style.display = 'block';
@@ -436,7 +430,6 @@ async function doGenerate() {
 
 // ── Init ──
 initThree();
-loadStyles();
 
 // Bind generate button + Enter key
 document.getElementById('genBtn').addEventListener('click', doGenerate);
