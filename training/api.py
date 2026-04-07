@@ -68,6 +68,16 @@ class GenerateResponse(BaseModel):
     classification: Optional[dict] = None
 
 
+class EditRequest(BaseModel):
+    instruction: str                           # natural-language edit
+    current_scene: dict = {}                   # last /generate response (slim)
+    conversation_history: list = []            # prior turns
+
+
+class EditResponse(GenerateResponse):
+    edit_summary: str = ""
+
+
 # ═══════════════════════════════════════════════════════════════════
 # Prompt parsing
 # ═══════════════════════════════════════════════════════════════════
@@ -520,6 +530,92 @@ async def generate(req: GenerateRequest):
     result["parsed"] = {"zones": zones, "min_gap": min_gap, "seed": seed}
     result["archetype_plan"] = arch_plan
     result["classification"] = classification
+    return result
+
+
+@app.post("/edit", response_model=EditResponse)
+async def edit_scene(req: EditRequest):
+    """
+    Apply a natural-language edit to the current scene.
+
+    Strategy: parse the instruction into a structured edit, translate it
+    to modified generation params (style/count/min_gap/seed), re-run the
+    full pipeline, then post-process the placement JSON for edits that
+    don't have a direct backend knob (height delta, entrance side).
+    """
+    from edit_parser import (
+        parse_edit_intent,
+        apply_edit_to_zone,
+        apply_edit_to_placement,
+    )
+
+    # 1. Parse the instruction
+    edit = parse_edit_intent(req.instruction)
+    # Avoid printing the raw instruction — it may contain non-ASCII chars
+    # that the Windows console (cp1252) cannot encode.
+    try:
+        print(f"[EDIT] intent={edit.get('intent')}  "
+              f"target={edit.get('target')}  direction={edit.get('direction')}  "
+              f"new_style={edit.get('new_style')}")
+    except Exception:
+        pass
+
+    # 2. Recover base zone params from the previous /generate response
+    cs = req.current_scene or {}
+    cs_parsed = cs.get("parsed") or {}
+    cs_zones = cs_parsed.get("zones") or []
+    base_zone = dict(cs_zones[0]) if cs_zones else {
+        "name": "main", "style": "medieval", "layout": "organic",
+        "count": 10, "density": "normal",
+    }
+    base_min_gap = cs_parsed.get("min_gap", 3.0)
+    base_seed = cs_parsed.get("seed", int(time.time()) % 100000)
+
+    # 3. Translate edit → new generation params
+    new_zone, new_min_gap, new_seed, summary = apply_edit_to_zone(
+        edit, base_zone, base_min_gap, base_seed)
+
+    # Validate the new params (in case style edit produced unknown style)
+    if new_zone["style"] not in AVAILABLE_STYLES:
+        new_zone["style"] = base_zone.get("style", "medieval")
+    if new_zone.get("layout") not in AVAILABLE_LAYOUTS:
+        new_zone["layout"] = _STYLE_DEFAULT_LAYOUT.get(new_zone["style"], "organic")
+
+    # 4. Re-run generation
+    result = run_generation([new_zone], new_min_gap, new_seed)
+    result["parsed"] = {"zones": [new_zone], "min_gap": new_min_gap, "seed": new_seed}
+    result["archetype_plan"] = None
+
+    # 5. Optional: re-classify the modified intent (cheap, lazy-loaded model)
+    classification = None
+    try:
+        from prompt_classifier import classify_prompt
+        # Classify the original instruction so the intent can shift
+        # ("change to japanese" should re-detect family).
+        classification = classify_prompt(req.instruction, style=new_zone["style"])
+    except Exception as e:
+        print(f"[EDIT] classifier skipped: {e}")
+    result["classification"] = classification
+
+    # 6. Post-process the placement JSON for height/entrance edits.
+    #    The mesh won't reflect these exactly, but the JSON download will,
+    #    which is what the UE5 assembler reads.
+    if edit.get("intent") in ("modify_height", "modify_entrance"):
+        json_url = result.get("json_url", "")
+        json_name = json_url.rsplit("/", 1)[-1]
+        json_path = OUTPUT_DIR / json_name
+        if json_path.exists():
+            try:
+                placement = json.loads(json_path.read_text(encoding="utf-8"))
+                placement = apply_edit_to_placement(edit, placement)
+                json_path.write_text(
+                    json.dumps(placement, indent=2, ensure_ascii=False),
+                    encoding="utf-8")
+                print(f"[EDIT] placement JSON post-processed: {json_path.name}")
+            except Exception as e:
+                print(f"[EDIT] placement post-process failed: {e}")
+
+    result["edit_summary"] = summary
     return result
 
 

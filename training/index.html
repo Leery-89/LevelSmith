@@ -612,13 +612,20 @@ async function sendMessage() {
       // ── Subsequent turns → /edit (not implemented yet) ──
       pendingMsg = appendPendingMessage('正在修改...');
 
+      // Send a slim version of the current scene so /edit can recover the
+      // generation params (style/layout/count/seed) without re-parsing.
+      const slim = {
+        parsed: currentScene.parsed,
+        stats: currentScene.stats,
+        classification: currentScene.classification,
+      };
       const resp = await fetch('/edit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           instruction: msg,
           conversation_history: conversationHistory,
-          current_scene: { glb_url: currentScene.glb_url, json_url: currentScene.json_url },
+          current_scene: slim,
         }),
       });
 
@@ -626,16 +633,18 @@ async function sendMessage() {
 
       if (resp.ok) {
         const data = await resp.json();
+        console.log('API /edit response:', JSON.stringify(data, null, 2));
         currentScene = data;
         loadGLB(data.glb_url);
         updateSceneInfo(data);
         updateToolbar(data);
         updateDownloadLinks(data);
-        const text = `✓ updated\n${data.edit_summary || ''}`;
+        const text = `✓ ${data.edit_summary || '已修改'}`;
         appendMessage('assistant', text);
         conversationHistory.push({ role: 'assistant', content: text });
       } else {
-        const text = '修改功能即将上线 (edit endpoint not implemented yet)';
+        const err = await resp.json().catch(() => ({}));
+        const text = `修改失败: ${err.detail || resp.status}`;
         appendMessage('assistant', text);
         conversationHistory.push({ role: 'assistant', content: text });
       }
