@@ -1185,9 +1185,12 @@ document.getElementById('btnApplyBuilding').addEventListener('click', async () =
   setInputEnabled(false);
   const pendingMsg = appendPendingMessage('Updating building...');
   try {
+    // Send building_infos (with latest drag positions) so the backend
+    // can merge them into the placement JSON before rebuilding.
     const slim = { parsed: currentScene.parsed, stats: currentScene.stats,
                    classification: currentScene.classification,
-                   json_url: currentScene.json_url };
+                   json_url: currentScene.json_url,
+                   building_infos: currentScene.building_infos };
     const instr = `__direct_edit__ set building ${selectedBuildingIdx} width=${w} depth=${d} height=${h} rotation=${r}`;
     const resp = await fetch('/edit', {
       method: 'POST',
@@ -1223,7 +1226,8 @@ document.getElementById('btnDeleteBuilding').addEventListener('click', async () 
   try {
     const slim = { parsed: currentScene.parsed, stats: currentScene.stats,
                    classification: currentScene.classification,
-                   json_url: currentScene.json_url };
+                   json_url: currentScene.json_url,
+                   building_infos: currentScene.building_infos };
     const resp = await fetch('/edit', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},

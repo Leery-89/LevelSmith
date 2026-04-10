@@ -677,6 +677,18 @@ async def edit_scene(req: EditRequest):
         json_path = OUTPUT_DIR / json_name if json_name else None
         if json_path and json_path.exists():
             placement = json.loads(json_path.read_text(encoding="utf-8"))
+
+            # Merge frontend building_infos positions into placement.
+            # This carries drag-to-move changes that only exist in JS memory.
+            fe_binfos = cs.get("building_infos") or []
+            if fe_binfos and placement.get("buildings"):
+                for fe_b in fe_binfos:
+                    idx = fe_b.get("idx", -1)
+                    if 0 <= idx < len(placement["buildings"]):
+                        pb = placement["buildings"][idx]
+                        pb["position"]["x"] = fe_b.get("x", pb["position"]["x"])
+                        pb["position"]["z"] = fe_b.get("z", pb["position"]["z"])
+
             placement = apply_direct_edit(direct, placement)
             # Validate and auto-fix
             from scene_validator import validate_placement
