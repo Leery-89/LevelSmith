@@ -533,21 +533,184 @@ async def generate(req: GenerateRequest):
     return result
 
 
+def _regenerate_from_placement(placement: dict) -> "trimesh.Scene":
+    """Rebuild mesh from a placement JSON without re-running layout.
+
+    Each building is reconstructed via generate_level.build_room() using
+    style-profile params overridden by the placement's per-building values.
+    This preserves positions and only changes the geometry that was edited.
+    """
+    import trimesh
+    import numpy as np
+    import trimesh.transformations as TF
+    import generate_level as gl
+    from style_base_profiles import apply_style_profile, get_profile_for_style
+    from geometry.materials import STYLE_PALETTES
+    from shapely.geometry import box as shapely_box
+
+    scene_info = placement.get("scene", {})
+    scene_style = scene_info.get("style_key", "medieval")
+    buildings = placement.get("buildings", [])
+
+    all_meshes = []
+    for b in buildings:
+        build_style = b.get("style_key", scene_style)
+
+        # Seed default params that apply_style_profile expects
+        w = float(b.get("width", 8))
+        d = float(b.get("depth", 8))
+        h = float(b.get("height", 6))
+        bparams = {
+            "height_range": [h * 0.9, h],
+            "wall_thickness": 0.3,
+            "floor_thickness": 0.2,
+            "subdivision": 1,
+        }
+
+        # Get and apply style profile overrides
+        profile = get_profile_for_style(build_style)
+        if profile:
+            bparams = apply_style_profile(bparams, profile,
+                                          role=b.get("role", "primary"))
+
+        # Force placement height (profile may have overridden height_range)
+        bparams["height_range"] = [h * 0.95, h]
+        feat = b.get("features") or {}
+        bparams.setdefault("wall_thickness", float(feat.get("wall_thickness", 0.3)))
+        bparams.setdefault("floor_thickness", 0.2)
+        bparams.setdefault("subdivision", int(feat.get("subdivision", 1)))
+
+        # Roof
+        roof = b.get("roof") or {}
+        _ROOF_TYPE_MAP = {"flat": 0, "gabled": 1, "hipped": 2, "pagoda": 3, "dome": 4}
+        bparams["roof_type"] = _ROOF_TYPE_MAP.get(roof.get("type", "flat"), 0)
+        bparams["roof_pitch"] = float(roof.get("pitch", 0.3))
+        bparams["eave_overhang"] = float(roof.get("eave_overhang", 0.0))
+
+        # Doors / windows
+        doors = b.get("doors") or [{}]
+        door0 = doors[0] if doors else {}
+        bparams["door_spec"] = {
+            "width": float(door0.get("width", 1.2)),
+            "height": float(door0.get("height", 2.2)),
+        }
+        wins = b.get("windows") or [{}]
+        win0 = wins[0] if wins else {}
+        bparams["win_spec"] = {
+            "width": float(win0.get("width", 0.6)),
+            "height": float(win0.get("height", 0.8)),
+            "density": float(win0.get("density", 0.3)),
+        }
+        bparams.setdefault("window_shape", int(win0.get("shape_id", 0)))
+
+        # Features
+        bparams.setdefault("has_battlements", int(feat.get("has_battlements", 0)))
+        bparams.setdefault("has_arch", int(feat.get("has_arch", 0)))
+        bparams.setdefault("column_count", int(feat.get("column_count", 0)))
+        bparams.pop("_material_variation", None)
+        bparams.pop("_symmetry_bias", None)
+
+        # Palette
+        base_style = build_style.split("_")[0] if "_" in build_style else build_style
+        palette = STYLE_PALETTES.get(base_style,
+                 STYLE_PALETTES.get("medieval"))
+
+        # Footprint
+        fp = shapely_box(0, 0, w, d)
+
+        try:
+            room = gl.build_room(bparams, palette, x_off=0, z_off=0,
+                                 footprint=fp)
+
+            # Rotate around building center
+            yaw = float(b.get("rotation_deg", 0))
+            if abs(yaw) > 0.01:
+                cx, cz = w / 2, d / 2
+                rot = TF.rotation_matrix(np.radians(yaw), [0, 1, 0])
+                for m in (room if isinstance(room, list) else [room]):
+                    if isinstance(m, trimesh.Trimesh):
+                        m.vertices -= [cx, 0, cz]
+                        m.apply_transform(rot)
+                        m.vertices += [cx, 0, cz]
+
+            # Translate to world position
+            px = float(b["position"]["x"])
+            pz = float(b["position"]["z"])
+            for m in (room if isinstance(room, list) else [room]):
+                if isinstance(m, trimesh.Trimesh):
+                    m.apply_translation([px, 0, pz])
+                    all_meshes.append(m)
+
+        except Exception as e:
+            try:
+                print(f"[REGEN] build_room failed for B{b.get('id')}: {e}")
+            except Exception:
+                pass
+
+    return trimesh.Scene(all_meshes) if all_meshes else trimesh.Scene()
+
+
 @app.post("/edit", response_model=EditResponse)
 async def edit_scene(req: EditRequest):
     """
     Apply a natural-language edit to the current scene.
 
-    Strategy: parse the instruction into a structured edit, translate it
-    to modified generation params (style/count/min_gap/seed), re-run the
-    full pipeline, then post-process the placement JSON for edits that
-    don't have a direct backend knob (height delta, entrance side).
+    Strategy: modify the placement JSON in-place, then rebuild meshes
+    from the modified placement (no layout re-roll). Only 'regenerate'
+    and 'modify_style' go through full run_generation().
     """
     from edit_parser import (
         parse_edit_intent,
+        parse_direct_edit,
+        apply_direct_edit,
         apply_edit_to_zone,
         apply_edit_to_placement,
     )
+
+    # 0. Direct UI edits bypass the parser entirely
+    direct = parse_direct_edit(req.instruction)
+    if direct:
+        cs = req.current_scene or {}
+        json_url = cs.get("json_url", "")
+        json_name = json_url.rsplit("/", 1)[-1] if json_url else ""
+        json_path = OUTPUT_DIR / json_name if json_name else None
+        if json_path and json_path.exists():
+            placement = json.loads(json_path.read_text(encoding="utf-8"))
+            placement = apply_direct_edit(direct, placement)
+            # Rebuild mesh from modified placement
+            t0 = time.time()
+            rebuilt_scene = _regenerate_from_placement(placement)
+            elapsed = time.time() - t0
+            edit_hash = hashlib.md5(req.instruction.encode()).hexdigest()[:6]
+            base_name = f"edit_{edit_hash}_{int(time.time()) % 100000}"
+            glb_path = OUTPUT_DIR / f"{base_name}.glb"
+            new_json_path = OUTPUT_DIR / f"{base_name}_placement.json"
+            rebuilt_scene.export(str(glb_path))
+            new_json_path.write_text(
+                json.dumps(placement, indent=2, ensure_ascii=False), encoding="utf-8")
+            binfos = [{"idx": b.get("id",0), "x": round(b["position"]["x"],2),
+                       "z": round(b["position"]["z"],2),
+                       "yaw_deg": round(b.get("rotation_deg",0),1),
+                       "width": round(b.get("width",0),2), "depth": round(b.get("depth",0),2),
+                       "cluster_id": -1, "is_main": b.get("role")=="primary",
+                       "role": b.get("role",""), "style_key": b.get("style_key","")}
+                      for b in placement.get("buildings", [])]
+            return {
+                "glb_url": f"/download/{glb_path.name}",
+                "json_url": f"/download/{new_json_path.name}",
+                "stats": {"faces": sum(len(g.faces) for g in rebuilt_scene.geometry.values() if hasattr(g,'faces')),
+                          "vertices": sum(len(g.vertices) for g in rebuilt_scene.geometry.values() if hasattr(g,'vertices')),
+                          "meshes": len(rebuilt_scene.geometry),
+                          "zones": 1, "building_count": len(binfos),
+                          "coverage": (placement.get("metadata") or {}).get("coverage_ratio", 0),
+                          "glb_kb": round(glb_path.stat().st_size/1024, 1),
+                          "json_kb": round(new_json_path.stat().st_size/1024, 1),
+                          "time_s": round(elapsed, 2)},
+                "parsed": cs.get("parsed", {}),
+                "clusters": [], "road_graph": {}, "building_infos": binfos,
+                "archetype_plan": None, "classification": cs.get("classification"),
+                "edit_summary": direct.get("summary", "direct edit applied"),
+            }
 
     # 1. Parse the instruction (LLM first, keyword fallback)
     edit = parse_edit_intent(req.instruction, req.current_scene)
@@ -558,71 +721,131 @@ async def edit_scene(req: EditRequest):
     except Exception:
         pass
 
-    # 1b. Regenerate intent → delegate to /generate
-    if edit.get("intent") == "regenerate":
-        gen_req = GenerateRequest(prompt=req.instruction)
-        result = await generate(gen_req)
-        if isinstance(result, dict):
-            result["edit_summary"] = edit.get("summary", "已重新生成场景")
-        return result
-
-    # 2. Recover base zone params from the previous /generate response
     cs = req.current_scene or {}
     cs_parsed = cs.get("parsed") or {}
-    cs_zones = cs_parsed.get("zones") or []
-    base_zone = dict(cs_zones[0]) if cs_zones else {
-        "name": "main", "style": "medieval", "layout": "organic",
-        "count": 10, "density": "normal",
+
+    # 2. Regenerate / modify_style → full pipeline (layout changes)
+    if edit.get("intent") in ("regenerate", "modify_style"):
+        cs_zones = cs_parsed.get("zones") or []
+        base_zone = dict(cs_zones[0]) if cs_zones else {
+            "name": "main", "style": "medieval", "layout": "organic",
+            "count": 10, "density": "normal",
+        }
+        base_min_gap = cs_parsed.get("min_gap", 3.0)
+        base_seed = cs_parsed.get("seed", int(time.time()) % 100000)
+
+        if edit.get("intent") == "regenerate":
+            gen_req = GenerateRequest(prompt=req.instruction)
+            result = await generate(gen_req)
+            if isinstance(result, dict):
+                result["edit_summary"] = edit.get("summary", "已重新生成场景")
+            return result
+
+        # modify_style: re-run with new style
+        new_zone, new_min_gap, new_seed, summary = apply_edit_to_zone(
+            edit, base_zone, base_min_gap, base_seed)
+        if new_zone["style"] not in AVAILABLE_STYLES:
+            new_zone["style"] = base_zone.get("style", "medieval")
+        if new_zone.get("layout") not in AVAILABLE_LAYOUTS:
+            new_zone["layout"] = _STYLE_DEFAULT_LAYOUT.get(new_zone["style"], "organic")
+        result = run_generation([new_zone], new_min_gap, new_seed)
+        result["parsed"] = {"zones": [new_zone], "min_gap": new_min_gap, "seed": new_seed}
+        result["archetype_plan"] = None
+        result["classification"] = None
+        result["edit_summary"] = summary
+        return result
+
+    # 3. All other intents: modify placement JSON + rebuild mesh from it
+    #    Load the existing placement JSON from the json_url
+    json_url = cs.get("json_url", "")
+    json_name = json_url.rsplit("/", 1)[-1] if json_url else ""
+    json_path = OUTPUT_DIR / json_name if json_name else None
+
+    if not json_path or not json_path.exists():
+        # Fall back to full re-generation if we can't find the placement
+        cs_zones = cs_parsed.get("zones") or []
+        base_zone = dict(cs_zones[0]) if cs_zones else {
+            "name": "main", "style": "medieval", "layout": "organic",
+            "count": 10, "density": "normal"}
+        base_min_gap = cs_parsed.get("min_gap", 3.0)
+        base_seed = cs_parsed.get("seed", 42)
+        new_zone, new_min_gap, new_seed, summary = apply_edit_to_zone(
+            edit, base_zone, base_min_gap, base_seed)
+        result = run_generation([new_zone], new_min_gap, new_seed)
+        result["parsed"] = {"zones": [new_zone], "min_gap": new_min_gap, "seed": new_seed}
+        result["edit_summary"] = summary + " (fallback: full regeneration)"
+        return result
+
+    # Load existing placement, apply the edit, rebuild mesh
+    placement = json.loads(json_path.read_text(encoding="utf-8"))
+    _, _, _, summary = apply_edit_to_zone(
+        edit,
+        (cs_parsed.get("zones") or [{}])[0] if cs_parsed.get("zones") else {},
+        cs_parsed.get("min_gap", 3.0),
+        cs_parsed.get("seed", 42),
+    )
+    placement = apply_edit_to_placement(edit, placement)
+
+    # Rebuild mesh from modified placement
+    t0 = time.time()
+    rebuilt_scene = _regenerate_from_placement(placement)
+    elapsed = time.time() - t0
+
+    # Export GLB + updated JSON
+    edit_hash = hashlib.md5(req.instruction.encode()).hexdigest()[:6]
+    base_name = f"edit_{edit_hash}_{int(time.time()) % 100000}"
+    glb_path = OUTPUT_DIR / f"{base_name}.glb"
+    new_json_path = OUTPUT_DIR / f"{base_name}_placement.json"
+
+    rebuilt_scene.export(str(glb_path))
+    new_json_path.write_text(
+        json.dumps(placement, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    total_faces = sum(len(g.faces) for g in rebuilt_scene.geometry.values()
+                      if hasattr(g, "faces"))
+    total_verts = sum(len(g.vertices) for g in rebuilt_scene.geometry.values()
+                      if hasattr(g, "vertices"))
+    n_buildings = len(placement.get("buildings", []))
+    coverage = (placement.get("metadata") or {}).get("coverage_ratio", 0)
+
+    # Build response matching GenerateResponse shape
+    binfos = []
+    for b in placement.get("buildings", []):
+        binfos.append({
+            "idx": b.get("id", 0),
+            "x": round(b["position"]["x"], 2),
+            "z": round(b["position"]["z"], 2),
+            "yaw_deg": round(b.get("rotation_deg", 0), 1),
+            "width": round(b.get("width", 0), 2),
+            "depth": round(b.get("depth", 0), 2),
+            "cluster_id": -1,
+            "is_main": b.get("role") == "primary",
+            "role": b.get("role", ""),
+            "style_key": b.get("style_key", ""),
+        })
+
+    return {
+        "glb_url": f"/download/{glb_path.name}",
+        "json_url": f"/download/{new_json_path.name}",
+        "stats": {
+            "faces": total_faces,
+            "vertices": total_verts,
+            "meshes": len(rebuilt_scene.geometry),
+            "zones": 1,
+            "building_count": n_buildings,
+            "coverage": coverage,
+            "glb_kb": round(glb_path.stat().st_size / 1024, 1),
+            "json_kb": round(new_json_path.stat().st_size / 1024, 1),
+            "time_s": round(elapsed, 2),
+        },
+        "parsed": cs_parsed,
+        "clusters": [],
+        "road_graph": {},
+        "building_infos": binfos,
+        "archetype_plan": None,
+        "classification": cs.get("classification"),
+        "edit_summary": summary,
     }
-    base_min_gap = cs_parsed.get("min_gap", 3.0)
-    base_seed = cs_parsed.get("seed", int(time.time()) % 100000)
-
-    # 3. Translate edit → new generation params
-    new_zone, new_min_gap, new_seed, summary = apply_edit_to_zone(
-        edit, base_zone, base_min_gap, base_seed)
-
-    # Validate the new params (in case style edit produced unknown style)
-    if new_zone["style"] not in AVAILABLE_STYLES:
-        new_zone["style"] = base_zone.get("style", "medieval")
-    if new_zone.get("layout") not in AVAILABLE_LAYOUTS:
-        new_zone["layout"] = _STYLE_DEFAULT_LAYOUT.get(new_zone["style"], "organic")
-
-    # 4. Re-run generation
-    result = run_generation([new_zone], new_min_gap, new_seed)
-    result["parsed"] = {"zones": [new_zone], "min_gap": new_min_gap, "seed": new_seed}
-    result["archetype_plan"] = None
-
-    # 5. Optional: re-classify the modified intent (cheap, lazy-loaded model)
-    classification = None
-    try:
-        from prompt_classifier import classify_prompt
-        # Classify the original instruction so the intent can shift
-        # ("change to japanese" should re-detect family).
-        classification = classify_prompt(req.instruction, style=new_zone["style"])
-    except Exception as e:
-        print(f"[EDIT] classifier skipped: {e}")
-    result["classification"] = classification
-
-    # 6. Post-process the placement JSON for height/entrance edits.
-    #    The mesh won't reflect these exactly, but the JSON download will,
-    #    which is what the UE5 assembler reads.
-    if edit.get("intent") in ("modify_height", "modify_entrance", "modify_size"):
-        json_url = result.get("json_url", "")
-        json_name = json_url.rsplit("/", 1)[-1]
-        json_path = OUTPUT_DIR / json_name
-        if json_path.exists():
-            try:
-                placement = json.loads(json_path.read_text(encoding="utf-8"))
-                placement = apply_edit_to_placement(edit, placement)
-                json_path.write_text(
-                    json.dumps(placement, indent=2, ensure_ascii=False),
-                    encoding="utf-8")
-                print(f"[EDIT] placement JSON post-processed: {json_path.name}")
-            except Exception as e:
-                print(f"[EDIT] placement post-process failed: {e}")
-
-    result["edit_summary"] = summary
-    return result
 
 
 @app.get("/download/{filename}")

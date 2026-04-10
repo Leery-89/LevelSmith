@@ -413,18 +413,93 @@ def apply_edit_to_zone(
 
 # ─── Placement-level editor (post-processes the placement JSON) ──────
 
-def apply_edit_to_placement(edit: dict, placement: dict) -> dict:
-    """Apply edits that don't map to generate_level params directly.
+def parse_direct_edit(instruction: str) -> Optional[dict]:
+    """Handle __direct_edit__ instructions from the building editor UI.
 
-    Modifies per-building height, size, and gate entrance side in the
-    placement JSON. The mesh approximates; the JSON is the source of truth.
+    Format: '__direct_edit__ set building N width=W depth=D height=H rotation=R'
+            '__direct_edit__ delete building N'
     """
+    import re
+    if not instruction.startswith("__direct_edit__"):
+        return None
+
+    # Delete building
+    m = re.search(r"delete building (\d+)", instruction)
+    if m:
+        return {
+            "intent": "direct_delete",
+            "building_idx": int(m.group(1)),
+            "raw": instruction,
+            "source": "direct",
+        }
+
+    # Set building params
+    m = re.search(r"set building (\d+)", instruction)
+    if m:
+        idx = int(m.group(1))
+        params: dict[str, float] = {}
+        for key in ("width", "depth", "height", "rotation"):
+            km = re.search(rf"{key}=([\d.]+)", instruction)
+            if km:
+                params[key] = float(km.group(1))
+        return {
+            "intent": "direct_set",
+            "building_idx": idx,
+            "params": params,
+            "raw": instruction,
+            "source": "direct",
+        }
+
+    return None
+
+
+def apply_direct_edit(edit: dict, placement: dict) -> dict:
+    """Apply a direct UI edit (set params or delete) to placement JSON."""
+    out = copy.deepcopy(placement)
+    buildings = out.get("buildings") or []
+    intent = edit.get("intent")
+    idx = edit.get("building_idx", -1)
+
+    if intent == "direct_set" and 0 <= idx < len(buildings):
+        params = edit.get("params", {})
+        b = buildings[idx]
+        if "width" in params:
+            b["width"] = max(4.0, round(params["width"], 2))
+        if "depth" in params:
+            b["depth"] = max(4.0, round(params["depth"], 2))
+        if "height" in params:
+            b["height"] = max(3.0, round(params["height"], 2))
+        if "rotation" in params:
+            b["rotation_deg"] = round(params["rotation"], 1)
+        edit["summary"] = f"Building #{idx} updated"
+
+    elif intent == "direct_delete" and 0 <= idx < len(buildings):
+        if buildings[idx].get("role") != "primary":
+            buildings.pop(idx)
+            edit["summary"] = f"Building #{idx} deleted, {len(buildings)} remaining"
+        else:
+            edit["summary"] = "Cannot delete primary building"
+
+    out["buildings"] = buildings
+    return out
+
+
+def apply_edit_to_placement(edit: dict, placement: dict) -> dict:
+    """Apply edits directly to the placement JSON.
+
+    Handles: height, size, count (add/remove), spacing, entrance.
+    The modified placement is then rebuilt into mesh by
+    _regenerate_from_placement().
+    """
+    import random
+
     if not placement or not isinstance(placement, dict):
         return placement
 
     out = copy.deepcopy(placement)
     intent = edit.get("intent", "unknown")
     buildings = out.get("buildings") or []
+    scene = out.get("scene") or {}
 
     if intent == "modify_height":
         target = edit.get("target", "all")
@@ -446,10 +521,106 @@ def apply_edit_to_placement(edit: dict, placement: dict) -> dict:
                 b["width"] = max(4.0, round(float(b.get("width", 8)) + delta, 2))
                 b["depth"] = max(4.0, round(float(b.get("depth", 8)) + delta, 2))
 
+    elif intent == "modify_count":
+        direction = 1 if (edit.get("direction") or 1) > 0 else -1
+        amount = int(edit.get("amount") or 2)
+
+        if direction > 0:
+            # Add buildings
+            area_w = float(scene.get("area_width", 100))
+            area_d = float(scene.get("area_depth", 100))
+            existing_pos = [(float(b["position"]["x"]), float(b["position"]["z"]))
+                            for b in buildings]
+
+            target_role = edit.get("target", "tertiary")
+            if target_role not in ("tower", "tertiary", "secondary", "ambient"):
+                target_role = "tertiary"
+
+            size_by_role = {
+                "tower":     {"width": 5, "depth": 5, "height": 10},
+                "tertiary":  {"width": 8, "depth": 8, "height": 6},
+                "secondary": {"width": 12, "depth": 10, "height": 8},
+                "ambient":   {"width": 5, "depth": 5, "height": 4},
+            }
+            sizes = size_by_role.get(target_role, size_by_role["tertiary"])
+
+            for _ in range(amount):
+                # Find a non-overlapping position
+                best_pos = None
+                for _attempt in range(50):
+                    nx = random.uniform(10, area_w - 10)
+                    nz = random.uniform(10, area_d - 10)
+                    if not existing_pos:
+                        best_pos = (nx, nz)
+                        break
+                    min_dist = min(((nx - px) ** 2 + (nz - pz) ** 2) ** 0.5
+                                   for px, pz in existing_pos)
+                    if min_dist > 8:
+                        best_pos = (nx, nz)
+                        break
+
+                if not best_pos:
+                    best_pos = (random.uniform(10, area_w - 10),
+                                random.uniform(10, area_d - 10))
+
+                template = buildings[0] if buildings else {}
+                new_b = {
+                    "id": len(buildings),
+                    "role": target_role,
+                    "position": {"x": round(best_pos[0], 2), "y": 0,
+                                 "z": round(best_pos[1], 2)},
+                    "rotation_deg": round(random.uniform(0, 360), 1),
+                    "width": sizes["width"],
+                    "depth": sizes["depth"],
+                    "height": sizes["height"],
+                    "style_key": scene.get("style_key", "medieval"),
+                    "roof": copy.deepcopy(template.get("roof", {
+                        "type": "flat", "type_id": 0, "pitch": 0.1,
+                        "eave_overhang": 0})),
+                    "doors": [{"wall": "front", "offset_ratio": 0.5,
+                               "width": 1.2, "height": 2.2}],
+                    "windows": copy.deepcopy(template.get("windows",
+                        [{"wall": "all", "density": 0.3, "width": 0.6,
+                          "height": 0.8, "shape": "rectangular", "shape_id": 0}])),
+                    "features": copy.deepcopy(template.get("features",
+                        {"wall_thickness": 0.3, "column_count": 0,
+                         "has_arch": False, "has_battlements": False,
+                         "subdivision": 1})),
+                }
+                buildings.append(new_b)
+                existing_pos.append(best_pos)
+
+            edit["summary"] = edit.get("summary") or (
+                f"已添加 {amount} 栋 {target_role} 建筑，共 {len(buildings)} 栋")
+
+        else:
+            # Remove buildings (never remove primary)
+            removed = 0
+            for _ in range(amount):
+                for i in range(len(buildings) - 1, -1, -1):
+                    if buildings[i].get("role") != "primary":
+                        buildings.pop(i)
+                        removed += 1
+                        break
+            edit["summary"] = edit.get("summary") or (
+                f"已移除 {removed} 栋建筑，剩余 {len(buildings)} 栋")
+
+    elif intent == "modify_spacing":
+        # Scale all positions outward/inward from center
+        if len(buildings) > 1:
+            cx = sum(float(b["position"]["x"]) for b in buildings) / len(buildings)
+            cz = sum(float(b["position"]["z"]) for b in buildings) / len(buildings)
+            direction = edit.get("direction") or 1
+            scale = 1.3 if direction > 0 else 0.8
+            for b in buildings:
+                b["position"]["x"] = round(cx + (float(b["position"]["x"]) - cx) * scale, 2)
+                b["position"]["z"] = round(cz + (float(b["position"]["z"]) - cz) * scale, 2)
+
     elif intent == "modify_entrance":
         new_side = edit.get("new_value") or edit.get("direction")
         if new_side and out.get("gates"):
             for g in out["gates"]:
                 g["wall_side"] = str(new_side)
 
+    out["buildings"] = buildings
     return out

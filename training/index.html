@@ -156,6 +156,94 @@
     white-space: nowrap;
   }
 
+  /* ── Scene Controls + Building Editor ────────────────────── */
+  .scene-controls, .building-editor {
+    padding: 12px 16px;
+    border-bottom: 1px solid #2a2a4a;
+    flex-shrink: 0;
+  }
+  .scene-controls h3, .building-editor h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #6272a4;
+    margin: 0 0 8px 0;
+    letter-spacing: 1px;
+  }
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0;
+    font-size: 12px;
+  }
+  .control-row label {
+    width: 70px;
+    color: #6272a4;
+    flex-shrink: 0;
+  }
+  .ctrl-select {
+    flex: 1;
+    background: #0f1626;
+    border: 1px solid #2a2a4a;
+    color: #ccd6f6;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .ctrl-slider {
+    flex: 1;
+    accent-color: #e94560;
+  }
+  .ctrl-slider + span {
+    width: 32px;
+    text-align: right;
+    color: #ccd6f6;
+    font-size: 12px;
+    font-family: monospace;
+  }
+  .apply-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 6px;
+    background: #e94560;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .apply-btn:hover { background: #d63851; }
+  .apply-btn:disabled { background: #444; cursor: not-allowed; }
+  .editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #ccd6f6;
+  }
+  .role-badge {
+    background: #e94560;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .delete-btn {
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px;
+    background: transparent;
+    color: #e94560;
+    border: 1px solid #e94560;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .delete-btn:hover { background: #e94560; color: white; }
+
   /* ── Chat Panel (bottom of sidebar) ────────────────────── */
   .chat-panel {
     display: flex;
@@ -324,6 +412,66 @@
       </div>
     </div>
 
+    <!-- Scene Controls -->
+    <div class="scene-controls" id="sceneControls" style="display:none;">
+      <h3>SCENE CONTROLS</h3>
+      <div class="control-row">
+        <label>Style</label>
+        <select id="ctrlStyle" class="ctrl-select">
+          <option value="medieval_keep">Medieval Keep</option>
+          <option value="medieval">Medieval</option>
+          <option value="japanese_temple">Japanese Temple</option>
+          <option value="industrial">Industrial</option>
+          <option value="fantasy_palace">Fantasy Palace</option>
+          <option value="horror_asylum">Horror Asylum</option>
+          <option value="modern_villa">Modern Villa</option>
+          <option value="desert_palace">Desert Palace</option>
+        </select>
+      </div>
+      <div class="control-row">
+        <label>Count</label>
+        <input type="range" id="ctrlCount" min="3" max="15" value="8" class="ctrl-slider">
+        <span id="ctrlCountVal">8</span>
+      </div>
+      <div class="control-row">
+        <label>Spacing</label>
+        <input type="range" id="ctrlSpacing" min="2" max="10" step="0.5" value="3" class="ctrl-slider">
+        <span id="ctrlSpacingVal">3.0</span>
+      </div>
+      <button id="btnApplyControls" class="apply-btn">Apply Changes</button>
+    </div>
+
+    <!-- Building Editor (shown when a building is clicked) -->
+    <div class="building-editor" id="buildingEditor" style="display:none;">
+      <h3>BUILDING EDITOR</h3>
+      <div class="editor-header">
+        <span id="editorTitle">Building #0</span>
+        <span id="editorRole" class="role-badge">primary</span>
+      </div>
+      <div class="control-row">
+        <label>Width</label>
+        <input type="range" id="bldWidth" min="4" max="25" step="0.5" class="ctrl-slider">
+        <span id="bldWidthVal">10</span>
+      </div>
+      <div class="control-row">
+        <label>Depth</label>
+        <input type="range" id="bldDepth" min="4" max="25" step="0.5" class="ctrl-slider">
+        <span id="bldDepthVal">10</span>
+      </div>
+      <div class="control-row">
+        <label>Height</label>
+        <input type="range" id="bldHeight" min="3" max="20" step="0.5" class="ctrl-slider">
+        <span id="bldHeightVal">8</span>
+      </div>
+      <div class="control-row">
+        <label>Rotation</label>
+        <input type="range" id="bldRotation" min="0" max="360" step="5" class="ctrl-slider">
+        <span id="bldRotationVal">0</span>
+      </div>
+      <button id="btnApplyBuilding" class="apply-btn">Apply</button>
+      <button id="btnDeleteBuilding" class="delete-btn">Delete Building</button>
+    </div>
+
     <!-- Chat Panel -->
     <div class="chat-panel" id="chatPanel">
       <div class="chat-history" id="chatHistory">
@@ -488,6 +636,15 @@ function updateSceneInfo(data) {
 
   document.getElementById('infoStyle').textContent = zone0.style || '—';
   document.getElementById('infoLayout').textContent = zone0.layout || '—';
+
+  // Show controls panel once we have a scene
+  document.getElementById('sceneControls').style.display = 'block';
+  if (zone0.style) {
+    const sel = document.getElementById('ctrlStyle');
+    for (const opt of sel.options) {
+      if (opt.value === zone0.style) { sel.value = zone0.style; break; }
+    }
+  }
   document.getElementById('infoFamily').textContent =
     c.family ? `${c.family} (${(c.confidence * 100).toFixed(0)}%)` : '—';
 
@@ -612,12 +769,13 @@ async function sendMessage() {
       // ── Subsequent turns → /edit (not implemented yet) ──
       pendingMsg = appendPendingMessage('正在修改...');
 
-      // Send a slim version of the current scene so /edit can recover the
-      // generation params (style/layout/count/seed) without re-parsing.
+      // Send enough of the current scene for /edit to find the placement JSON
+      // and recover generation params.
       const slim = {
         parsed: currentScene.parsed,
         stats: currentScene.stats,
         classification: currentScene.classification,
+        json_url: currentScene.json_url,
       };
       const resp = await fetch('/edit', {
         method: 'POST',
@@ -681,6 +839,178 @@ function regenerate() {
   document.getElementById('chatInput').value = firstPrompt;
   sendMessage();
 }
+
+// ── Scene Controls ────────────────────────────────
+document.getElementById('btnApplyControls').addEventListener('click', async () => {
+  const style = document.getElementById('ctrlStyle').value;
+  const count = parseInt(document.getElementById('ctrlCount').value);
+  const spacing = parseFloat(document.getElementById('ctrlSpacing').value);
+
+  setInputEnabled(false);
+  const pendingMsg = appendPendingMessage('Regenerating with new params...');
+  document.getElementById('loading').style.display = 'block';
+
+  try {
+    const resp = await fetch('/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({prompt: `${style} scene`, count, min_gap: spacing}),
+    });
+    const data = await resp.json();
+    currentScene = data;
+    loadGLB(data.glb_url);
+    updateSceneInfo(data);
+    updateToolbar(data);
+    updateDownloadLinks(data);
+    pendingMsg.remove();
+    appendMessage('assistant', `✓ 场景已重新生成 (${style})`);
+  } catch (err) {
+    pendingMsg.remove();
+    appendMessage('assistant', `error: ${err.message}`);
+  } finally {
+    document.getElementById('loading').style.display = 'none';
+    setInputEnabled(true);
+  }
+});
+
+['ctrlCount', 'ctrlSpacing'].forEach(id => {
+  document.getElementById(id).addEventListener('input', (e) => {
+    document.getElementById(id + 'Val').textContent =
+      id === 'ctrlSpacing' ? parseFloat(e.target.value).toFixed(1) : e.target.value;
+  });
+});
+
+// ── Building Click-to-Select ──────────────────────
+const raycaster = new THREE.Raycaster();
+const mouseVec = new THREE.Vector2();
+let selectedBuildingIdx = null;
+
+renderer.domElement.addEventListener('click', (event) => {
+  if (!currentScene || !currentModel) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouseVec.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  mouseVec.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouseVec, camera);
+
+  const meshes = [];
+  currentModel.traverse(child => { if (child.isMesh) meshes.push(child); });
+  const hits = raycaster.intersectObjects(meshes, false);
+
+  if (hits.length > 0 && currentScene.building_infos) {
+    const pt = hits[0].point;
+    let bestIdx = -1, bestDist = Infinity;
+    const binfos = currentScene.building_infos;
+    for (let i = 0; i < binfos.length; i++) {
+      const b = binfos[i];
+      const dx = pt.x - (b.x || 0);
+      const dz = pt.z - (b.z || 0);
+      const dist = Math.sqrt(dx*dx + dz*dz);
+      if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+    }
+    if (bestIdx >= 0 && bestDist < 30) {
+      selectBuilding(bestIdx);
+    } else { deselectBuilding(); }
+  } else { deselectBuilding(); }
+});
+
+function selectBuilding(idx) {
+  const binfos = currentScene.building_infos || [];
+  if (idx < 0 || idx >= binfos.length) return;
+  const b = binfos[idx];
+  selectedBuildingIdx = idx;
+  document.getElementById('sceneControls').style.display = 'block';
+  document.getElementById('buildingEditor').style.display = 'block';
+  document.getElementById('editorTitle').textContent = `Building #${b.idx ?? idx}`;
+  document.getElementById('editorRole').textContent = b.role || '?';
+  document.getElementById('bldWidth').value = b.width || 8;
+  document.getElementById('bldWidthVal').textContent = (b.width || 8).toFixed(1);
+  document.getElementById('bldDepth').value = b.depth || 8;
+  document.getElementById('bldDepthVal').textContent = (b.depth || 8).toFixed(1);
+  document.getElementById('bldHeight').value = 8;
+  document.getElementById('bldHeightVal').textContent = '8.0';
+  document.getElementById('bldRotation').value = b.yaw_deg || 0;
+  document.getElementById('bldRotationVal').textContent = Math.round(b.yaw_deg || 0);
+}
+
+function deselectBuilding() {
+  selectedBuildingIdx = null;
+  document.getElementById('buildingEditor').style.display = 'none';
+}
+
+['bldWidth', 'bldDepth', 'bldHeight', 'bldRotation'].forEach(id => {
+  document.getElementById(id).addEventListener('input', (e) => {
+    const v = parseFloat(e.target.value);
+    document.getElementById(id + 'Val').textContent =
+      id === 'bldRotation' ? Math.round(v) : v.toFixed(1);
+  });
+});
+
+document.getElementById('btnApplyBuilding').addEventListener('click', async () => {
+  if (selectedBuildingIdx === null || !currentScene) return;
+  const w = parseFloat(document.getElementById('bldWidth').value);
+  const d = parseFloat(document.getElementById('bldDepth').value);
+  const h = parseFloat(document.getElementById('bldHeight').value);
+  const r = parseFloat(document.getElementById('bldRotation').value);
+  setInputEnabled(false);
+  const pendingMsg = appendPendingMessage('Updating building...');
+  try {
+    const slim = { parsed: currentScene.parsed, stats: currentScene.stats,
+                   classification: currentScene.classification,
+                   json_url: currentScene.json_url };
+    const instr = `__direct_edit__ set building ${selectedBuildingIdx} width=${w} depth=${d} height=${h} rotation=${r}`;
+    const resp = await fetch('/edit', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({instruction: instr, current_scene: slim}),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      currentScene = data;
+      loadGLB(data.glb_url);
+      updateSceneInfo(data);
+      updateDownloadLinks(data);
+      pendingMsg.remove();
+      appendMessage('assistant', `✓ Building #${selectedBuildingIdx} updated`);
+    } else { pendingMsg.remove(); appendMessage('assistant', 'Update failed'); }
+  } catch (err) { pendingMsg.remove(); appendMessage('assistant', `error: ${err.message}`); }
+  finally { setInputEnabled(true); }
+});
+
+document.getElementById('btnDeleteBuilding').addEventListener('click', async () => {
+  if (selectedBuildingIdx === null || !currentScene) return;
+  const binfos = currentScene.building_infos || [];
+  if (selectedBuildingIdx >= binfos.length) return;
+  if (binfos[selectedBuildingIdx].role === 'primary') {
+    appendMessage('assistant', 'Cannot delete primary building');
+    return;
+  }
+  deselectBuilding();
+  setInputEnabled(false);
+  const pendingMsg = appendPendingMessage('Deleting building...');
+  try {
+    const slim = { parsed: currentScene.parsed, stats: currentScene.stats,
+                   classification: currentScene.classification,
+                   json_url: currentScene.json_url };
+    const resp = await fetch('/edit', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        instruction: `__direct_edit__ delete building ${selectedBuildingIdx}`,
+        current_scene: slim,
+      }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      currentScene = data;
+      loadGLB(data.glb_url);
+      updateSceneInfo(data);
+      updateDownloadLinks(data);
+      pendingMsg.remove();
+      appendMessage('assistant', `✓ Building deleted, ${data.stats?.building_count || '?'} remaining`);
+    } else { pendingMsg.remove(); appendMessage('assistant', 'Delete failed'); }
+  } catch (err) { pendingMsg.remove(); appendMessage('assistant', `error: ${err.message}`); }
+  finally { setInputEnabled(true); }
+});
 
 // ── Init + bindings ───────────────────────────────
 initThree();
