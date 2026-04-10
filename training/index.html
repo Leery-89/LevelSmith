@@ -589,34 +589,48 @@ function buildMeshMapping() {
   if (!currentModel || !currentScene || !currentScene.building_infos) return;
   const binfos = currentScene.building_infos;
   meshMap = binfos.map(() => []);
+
+  // Force world matrix update so bounding boxes are accurate
+  currentModel.updateMatrixWorld(true);
+
   currentModel.traverse(child => {
     if (!child.isMesh) return;
-    const wp = new THREE.Vector3();
-    child.getWorldPosition(wp);
+    // Use geometry bounding box center (NOT getWorldPosition, which returns
+    // (0,0,0) for trimesh GLBs where positions are baked into vertices).
+    const box = new THREE.Box3().setFromObject(child);
+    const center = box.getCenter(new THREE.Vector3());
+
     let bestI = -1, bestD = Infinity;
     for (let i = 0; i < binfos.length; i++) {
-      const dx = wp.x - (binfos[i].x || 0);
-      const dz = wp.z - (binfos[i].z || 0);
+      const dx = center.x - (binfos[i].x || 0);
+      const dz = center.z - (binfos[i].z || 0);
       const d = Math.sqrt(dx*dx + dz*dz);
       if (d < bestD) { bestD = d; bestI = i; }
     }
     if (bestI >= 0) {
-      meshMap[bestI].push({ mesh: child, origX: child.position.x, origZ: child.position.z });
+      meshMap[bestI].push({
+        mesh: child,
+        origLocalX: child.position.x,
+        origLocalZ: child.position.z,
+      });
     }
   });
+
+  console.log('Mesh mapping:', meshMap.map((m, i) =>
+    `B${i}:${m.length}meshes`).join(' '));
 }
 
 function moveBuildingMeshes(idx, newX, newZ) {
   const entries = meshMap[idx];
-  if (!entries || !currentScene) return;
+  if (!entries || entries.length === 0) return;
   const b = currentScene.building_infos[idx];
   const origBX = b._origX ?? b.x ?? 0;
   const origBZ = b._origZ ?? b.z ?? 0;
   const deltaX = newX - origBX;
   const deltaZ = newZ - origBZ;
   for (const e of entries) {
-    e.mesh.position.x = e.origX + deltaX;
-    e.mesh.position.z = e.origZ + deltaZ;
+    e.mesh.position.x = e.origLocalX + deltaX;
+    e.mesh.position.z = e.origLocalZ + deltaZ;
   }
 }
 
@@ -1132,11 +1146,16 @@ function onDragEnd(event) {
   if (selectedBuildingIdx < binfos.length) {
     binfos[selectedBuildingIdx].x = newX;
     binfos[selectedBuildingIdx].z = newZ;
-    // Clear originals so next drag uses the new position
     delete binfos[selectedBuildingIdx]._origX;
     delete binfos[selectedBuildingIdx]._origZ;
-    // Rebuild mesh mapping with updated positions
-    buildMeshMapping();
+
+    // Update mesh mapping: record current local positions as new originals
+    // so the next drag starts from the new position, not the old one.
+    const entries = meshMap[selectedBuildingIdx] || [];
+    for (const e of entries) {
+      e.origLocalX = e.mesh.position.x;
+      e.origLocalZ = e.mesh.position.z;
+    }
   }
   appendMessage('assistant',
     `✓ Building #${selectedBuildingIdx} moved to (${newX.toFixed(1)}, ${newZ.toFixed(1)})`);
