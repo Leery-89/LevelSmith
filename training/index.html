@@ -581,33 +581,83 @@ function onResize() {
   renderer.setSize(w, h);
 }
 
-function loadGLB(url) {
+// Mesh-to-building mapping (rebuilt after each GLB load)
+let meshMap = [];  // [buildingIdx] → [{mesh, origX, origZ}, ...]
+
+function buildMeshMapping() {
+  meshMap = [];
+  if (!currentModel || !currentScene || !currentScene.building_infos) return;
+  const binfos = currentScene.building_infos;
+  meshMap = binfos.map(() => []);
+  currentModel.traverse(child => {
+    if (!child.isMesh) return;
+    const wp = new THREE.Vector3();
+    child.getWorldPosition(wp);
+    let bestI = -1, bestD = Infinity;
+    for (let i = 0; i < binfos.length; i++) {
+      const dx = wp.x - (binfos[i].x || 0);
+      const dz = wp.z - (binfos[i].z || 0);
+      const d = Math.sqrt(dx*dx + dz*dz);
+      if (d < bestD) { bestD = d; bestI = i; }
+    }
+    if (bestI >= 0) {
+      meshMap[bestI].push({ mesh: child, origX: child.position.x, origZ: child.position.z });
+    }
+  });
+}
+
+function moveBuildingMeshes(idx, newX, newZ) {
+  const entries = meshMap[idx];
+  if (!entries || !currentScene) return;
+  const b = currentScene.building_infos[idx];
+  const origBX = b._origX ?? b.x ?? 0;
+  const origBZ = b._origZ ?? b.z ?? 0;
+  const deltaX = newX - origBX;
+  const deltaZ = newZ - origBZ;
+  for (const e of entries) {
+    e.mesh.position.x = e.origX + deltaX;
+    e.mesh.position.z = e.origZ + deltaZ;
+  }
+}
+
+function loadGLB(url, resetCamera) {
+  if (resetCamera === undefined) resetCamera = true;
+  const savedPos = camera.position.clone();
+  const savedTarget = controls.target.clone();
+
   const loader = new GLTFLoader();
   loader.load(url, (gltf) => {
     if (currentModel) scene.remove(currentModel);
+    removeHighlight();
     currentModel = gltf.scene;
 
     currentModel.traverse((child) => {
       if (child.isMesh) {
         child.material = new THREE.MeshStandardMaterial({
-          vertexColors: true,
-          roughness: 0.7,
-          metalness: 0.0,
+          vertexColors: true, roughness: 0.7, metalness: 0.0,
         });
       }
     });
 
     scene.add(currentModel);
 
-    const box = new THREE.Box3().setFromObject(currentModel);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    camera.position.set(center.x + maxDim * 0.8, center.y + maxDim * 0.5, center.z + maxDim * 0.8);
-    controls.target.copy(center);
+    if (resetCamera) {
+      const box = new THREE.Box3().setFromObject(currentModel);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      camera.position.set(center.x + maxDim * 0.8, center.y + maxDim * 0.5, center.z + maxDim * 0.8);
+      controls.target.copy(center);
+    } else {
+      camera.position.copy(savedPos);
+      controls.target.copy(savedTarget);
+    }
     controls.update();
 
     document.getElementById('emptyState').style.display = 'none';
+
+    // Build mesh mapping after a tick so currentScene is available
+    setTimeout(buildMeshMapping, 50);
   });
 }
 
@@ -1005,9 +1055,7 @@ function deselectBuilding() {
   document.getElementById('buildingEditor').style.display = 'none';
 }
 
-// ── Mouse handlers: click vs drag ────────────────
-
-// ── Mouse handlers: click vs drag ────────────────
+// ── Mouse handlers: click + drag-to-move ─────────
 
 viewerEl.addEventListener('mousedown', (event) => {
   if (event.button !== 0 || !currentScene || !currentModel) return;
@@ -1017,20 +1065,18 @@ viewerEl.addEventListener('mousedown', (event) => {
   updateMouseVec(event);
   raycaster.setFromCamera(mouseVec, camera);
 
-  // Intersect with the ground plane to get a world XZ point
   const groundPt = new THREE.Vector3();
-  const hit = raycaster.ray.intersectPlane(dragPlane, groundPt);
-  if (!hit) return;
+  if (!raycaster.ray.intersectPlane(dragPlane, groundPt)) return;
 
-  // Find which building's footprint contains this point
   const idx = findBuildingAtPoint(groundPt);
-
   if (idx >= 0) {
     selectBuilding(idx);
     highlightBuilding(idx);
 
-    // Prepare drag: offset from click to building center
     const b = currentScene.building_infos[idx];
+    // Store original position for delta calculation during drag
+    b._origX = b.x;
+    b._origZ = b.z;
     dragOffset.set((b.x || 0) - groundPt.x, 0, (b.z || 0) - groundPt.z);
 
     isDragging = true;
@@ -1042,10 +1088,9 @@ viewerEl.addEventListener('mousedown', (event) => {
 
 viewerEl.addEventListener('mousemove', (event) => {
   if (!isDragging || selectedBuildingIdx === null) return;
-
   const dx = event.clientX - mouseDownPos.x;
   const dy = event.clientY - mouseDownPos.y;
-  if (Math.sqrt(dx * dx + dy * dy) < 5) return;
+  if (Math.sqrt(dx*dx + dy*dy) < 5) return;
 
   updateMouseVec(event);
   raycaster.setFromCamera(mouseVec, camera);
@@ -1054,7 +1099,10 @@ viewerEl.addEventListener('mousemove', (event) => {
   const newX = dragIntersect.x + dragOffset.x;
   const newZ = dragIntersect.z + dragOffset.z;
 
-  // Move the highlight box to track the cursor
+  // Move the actual building meshes in the scene
+  moveBuildingMeshes(selectedBuildingIdx, newX, newZ);
+
+  // Move highlight box
   if (outlineMesh) {
     outlineMesh.position.x = newX;
     outlineMesh.position.z = newZ;
@@ -1065,57 +1113,33 @@ viewerEl.addEventListener('mousemove', (event) => {
   document.getElementById('bldPosZ').textContent = newZ.toFixed(1);
 });
 
-async function onDragEnd(event) {
+function onDragEnd(event) {
   if (!isDragging) return;
   isDragging = false;
   controls.enabled = true;
 
   const dx = event.clientX - mouseDownPos.x;
   const dy = event.clientY - mouseDownPos.y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (Math.sqrt(dx*dx + dy*dy) < 5 || selectedBuildingIdx === null) return;
 
-  // Click (< 5px): select only, no move
-  if (dist < 5 || selectedBuildingIdx === null || !currentScene) return;
-
-  // Read new position from the live display
+  // Read final position
   const newX = parseFloat(document.getElementById('bldPosX').textContent);
   const newZ = parseFloat(document.getElementById('bldPosZ').textContent);
   if (isNaN(newX) || isNaN(newZ)) return;
 
-  // Update local data
-  const binfos = currentScene.building_infos || [];
+  // Update local data only (no backend call — instant)
+  const binfos = currentScene.building_infos;
   if (selectedBuildingIdx < binfos.length) {
     binfos[selectedBuildingIdx].x = newX;
     binfos[selectedBuildingIdx].z = newZ;
+    // Clear originals so next drag uses the new position
+    delete binfos[selectedBuildingIdx]._origX;
+    delete binfos[selectedBuildingIdx]._origZ;
+    // Rebuild mesh mapping with updated positions
+    buildMeshMapping();
   }
-
-  // Submit to backend: rebuild mesh at new position
-  const pendingMsg = appendPendingMessage('Moving building...');
-  try {
-    const slim = { parsed: currentScene.parsed, stats: currentScene.stats,
-                   classification: currentScene.classification,
-                   json_url: currentScene.json_url };
-    const resp = await fetch('/edit', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        instruction: `__direct_edit__ move building ${selectedBuildingIdx} x=${newX.toFixed(2)} z=${newZ.toFixed(2)}`,
-        current_scene: slim,
-      }),
-    });
-    pendingMsg.remove();
-    if (resp.ok) {
-      const data = await resp.json();
-      currentScene = data;
-      loadGLB(data.glb_url);  // reload to see the building at its new position
-      updateSceneInfo(data);
-      updateDownloadLinks(data);
-      appendMessage('assistant', `✓ Building #${selectedBuildingIdx} moved`);
-    }
-  } catch (err) {
-    pendingMsg.remove();
-    console.error('Move failed:', err);
-  }
+  appendMessage('assistant',
+    `✓ Building #${selectedBuildingIdx} moved to (${newX.toFixed(1)}, ${newZ.toFixed(1)})`);
 }
 
 viewerEl.addEventListener('mouseup', onDragEnd);
@@ -1154,11 +1178,13 @@ document.getElementById('btnApplyBuilding').addEventListener('click', async () =
     if (resp.ok) {
       const data = await resp.json();
       currentScene = data;
-      loadGLB(data.glb_url);
+      loadGLB(data.glb_url, false);  // keep camera
       updateSceneInfo(data);
       updateDownloadLinks(data);
       pendingMsg.remove();
       appendMessage('assistant', `✓ Building #${selectedBuildingIdx} updated`);
+      // Re-highlight after reload
+      setTimeout(() => highlightBuilding(selectedBuildingIdx), 100);
     } else { pendingMsg.remove(); appendMessage('assistant', 'Update failed'); }
   } catch (err) { pendingMsg.remove(); appendMessage('assistant', `error: ${err.message}`); }
   finally { setInputEnabled(true); }
@@ -1190,7 +1216,7 @@ document.getElementById('btnDeleteBuilding').addEventListener('click', async () 
     if (resp.ok) {
       const data = await resp.json();
       currentScene = data;
-      loadGLB(data.glb_url);
+      loadGLB(data.glb_url, false);  // keep camera
       updateSceneInfo(data);
       updateDownloadLinks(data);
       pendingMsg.remove();
