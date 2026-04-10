@@ -433,6 +433,23 @@ def parse_direct_edit(instruction: str) -> Optional[dict]:
             "source": "direct",
         }
 
+    # Move building
+    m = re.search(r"move building (\d+)", instruction)
+    if m:
+        idx = int(m.group(1))
+        params: dict[str, float] = {}
+        for key in ("x", "z"):
+            km = re.search(rf"{key}=([\d.\-]+)", instruction)
+            if km:
+                params[key] = float(km.group(1))
+        return {
+            "intent": "direct_move",
+            "building_idx": idx,
+            "params": params,
+            "raw": instruction,
+            "source": "direct",
+        }
+
     # Set building params
     m = re.search(r"set building (\d+)", instruction)
     if m:
@@ -460,7 +477,16 @@ def apply_direct_edit(edit: dict, placement: dict) -> dict:
     intent = edit.get("intent")
     idx = edit.get("building_idx", -1)
 
-    if intent == "direct_set" and 0 <= idx < len(buildings):
+    if intent == "direct_move" and 0 <= idx < len(buildings):
+        params = edit.get("params", {})
+        b = buildings[idx]
+        if "x" in params:
+            b["position"]["x"] = round(params["x"], 2)
+        if "z" in params:
+            b["position"]["z"] = round(params["z"], 2)
+        edit["summary"] = f"Building #{idx} moved to ({b['position']['x']:.1f}, {b['position']['z']:.1f})"
+
+    elif intent == "direct_set" and 0 <= idx < len(buildings):
         params = edit.get("params", {})
         b = buildings[idx]
         if "width" in params:

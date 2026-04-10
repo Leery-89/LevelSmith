@@ -468,6 +468,15 @@
         <input type="range" id="bldRotation" min="0" max="360" step="5" class="ctrl-slider">
         <span id="bldRotationVal">0</span>
       </div>
+      <div class="control-row">
+        <label>Pos X</label>
+        <span id="bldPosX" class="info-value" style="font-family:monospace;font-size:12px">—</span>
+      </div>
+      <div class="control-row">
+        <label>Pos Z</label>
+        <span id="bldPosZ" class="info-value" style="font-family:monospace;font-size:12px">—</span>
+      </div>
+      <div style="font-size:10px;color:#6272a4;margin:4px 0;">Drag building in 3D view to move</div>
       <button id="btnApplyBuilding" class="apply-btn">Apply</button>
       <button id="btnDeleteBuilding" class="delete-btn">Delete Building</button>
     </div>
@@ -880,38 +889,63 @@ document.getElementById('btnApplyControls').addEventListener('click', async () =
   });
 });
 
-// ── Building Click-to-Select ──────────────────────
+// ── Building Select + Drag ────────────────────────
 const raycaster = new THREE.Raycaster();
 const mouseVec = new THREE.Vector2();
 let selectedBuildingIdx = null;
 
-viewerEl.addEventListener('click', (event) => {
-  if (!currentScene || !currentModel) return;
+// Highlight state
+let outlineMesh = null;
+let selectedMesh = null;
+
+// Drag state
+let isDragging = false;
+const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const dragOffset = new THREE.Vector3();
+const dragIntersect = new THREE.Vector3();
+let mouseDownPos = { x: 0, y: 0 };
+let mouseDownTime = 0;
+
+function updateMouseVec(event) {
   const rect = viewerEl.getBoundingClientRect();
   mouseVec.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   mouseVec.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(mouseVec, camera);
+}
 
-  const meshes = [];
-  currentModel.traverse(child => { if (child.isMesh) meshes.push(child); });
-  const hits = raycaster.intersectObjects(meshes, false);
+function findNearestBuilding(point) {
+  if (!currentScene || !currentScene.building_infos) return -1;
+  const binfos = currentScene.building_infos;
+  let best = -1, bestD = Infinity;
+  for (let i = 0; i < binfos.length; i++) {
+    const dx = point.x - (binfos[i].x || 0);
+    const dz = point.z - (binfos[i].z || 0);
+    const d = Math.sqrt(dx*dx + dz*dz);
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return (best >= 0 && bestD < 30) ? best : -1;
+}
 
-  if (hits.length > 0 && currentScene.building_infos) {
-    const pt = hits[0].point;
-    let bestIdx = -1, bestDist = Infinity;
-    const binfos = currentScene.building_infos;
-    for (let i = 0; i < binfos.length; i++) {
-      const b = binfos[i];
-      const dx = pt.x - (b.x || 0);
-      const dz = pt.z - (b.z || 0);
-      const dist = Math.sqrt(dx*dx + dz*dz);
-      if (dist < bestDist) { bestDist = dist; bestIdx = i; }
-    }
-    if (bestIdx >= 0 && bestDist < 30) {
-      selectBuilding(bestIdx);
-    } else { deselectBuilding(); }
-  } else { deselectBuilding(); }
-});
+function highlightMesh(mesh) {
+  removeHighlight();
+  selectedMesh = mesh;
+  const edges = new THREE.EdgesGeometry(mesh.geometry);
+  outlineMesh = new THREE.LineSegments(edges,
+    new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 }));
+  outlineMesh.position.copy(mesh.position);
+  outlineMesh.rotation.copy(mesh.rotation);
+  outlineMesh.scale.copy(mesh.scale).multiplyScalar(1.02);
+  scene.add(outlineMesh);
+}
+
+function removeHighlight() {
+  if (outlineMesh) {
+    scene.remove(outlineMesh);
+    outlineMesh.geometry.dispose();
+    outlineMesh.material.dispose();
+    outlineMesh = null;
+  }
+  selectedMesh = null;
+}
 
 function selectBuilding(idx) {
   const binfos = currentScene.building_infos || [];
@@ -930,12 +964,128 @@ function selectBuilding(idx) {
   document.getElementById('bldHeightVal').textContent = '8.0';
   document.getElementById('bldRotation').value = b.yaw_deg || 0;
   document.getElementById('bldRotationVal').textContent = Math.round(b.yaw_deg || 0);
+  document.getElementById('bldPosX').textContent = (b.x || 0).toFixed(1);
+  document.getElementById('bldPosZ').textContent = (b.z || 0).toFixed(1);
 }
 
 function deselectBuilding() {
   selectedBuildingIdx = null;
+  removeHighlight();
   document.getElementById('buildingEditor').style.display = 'none';
 }
+
+// ── Mouse handlers: click vs drag ────────────────
+
+viewerEl.addEventListener('mousedown', (event) => {
+  if (event.button !== 0 || !currentScene || !currentModel) return;
+  mouseDownPos.x = event.clientX;
+  mouseDownPos.y = event.clientY;
+  mouseDownTime = Date.now();
+
+  updateMouseVec(event);
+  raycaster.setFromCamera(mouseVec, camera);
+
+  const meshes = [];
+  currentModel.traverse(c => { if (c.isMesh) meshes.push(c); });
+  const hits = raycaster.intersectObjects(meshes, false);
+
+  if (hits.length > 0) {
+    const hit = hits[0];
+    const idx = findNearestBuilding(hit.point);
+    if (idx >= 0) {
+      selectBuilding(idx);
+      highlightMesh(hit.object);
+
+      // Prepare for potential drag
+      raycaster.ray.intersectPlane(dragPlane, dragIntersect);
+      dragOffset.copy(hit.object.position).sub(dragIntersect);
+      isDragging = true;
+      controls.enabled = false;
+      return;
+    }
+  }
+  // Clicked empty space
+  deselectBuilding();
+});
+
+viewerEl.addEventListener('mousemove', (event) => {
+  if (!isDragging || !selectedMesh) return;
+
+  const dx = event.clientX - mouseDownPos.x;
+  const dy = event.clientY - mouseDownPos.y;
+  if (Math.sqrt(dx*dx + dy*dy) < 5) return; // dead zone
+
+  updateMouseVec(event);
+  raycaster.setFromCamera(mouseVec, camera);
+  raycaster.ray.intersectPlane(dragPlane, dragIntersect);
+
+  selectedMesh.position.x = dragIntersect.x + dragOffset.x;
+  selectedMesh.position.z = dragIntersect.z + dragOffset.z;
+
+  if (outlineMesh) {
+    outlineMesh.position.x = selectedMesh.position.x;
+    outlineMesh.position.z = selectedMesh.position.z;
+  }
+
+  // Live update position display
+  document.getElementById('bldPosX').textContent = selectedMesh.position.x.toFixed(1);
+  document.getElementById('bldPosZ').textContent = selectedMesh.position.z.toFixed(1);
+});
+
+async function onDragEnd(event) {
+  if (!isDragging) return;
+  isDragging = false;
+  controls.enabled = true;
+
+  const dx = event.clientX - mouseDownPos.x;
+  const dy = event.clientY - mouseDownPos.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+
+  // If moved less than 5px, treat as click (select only, no move)
+  if (dist < 5 || selectedBuildingIdx === null || !currentScene) return;
+
+  // Update building_infos with new position
+  const binfos = currentScene.building_infos || [];
+  if (selectedBuildingIdx < binfos.length && selectedMesh) {
+    binfos[selectedBuildingIdx].x = selectedMesh.position.x;
+    binfos[selectedBuildingIdx].z = selectedMesh.position.z;
+  }
+
+  // Submit move to backend
+  try {
+    const slim = { parsed: currentScene.parsed, stats: currentScene.stats,
+                   classification: currentScene.classification,
+                   json_url: currentScene.json_url };
+    const nx = selectedMesh.position.x.toFixed(2);
+    const nz = selectedMesh.position.z.toFixed(2);
+    const resp = await fetch('/edit', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        instruction: `__direct_edit__ move building ${selectedBuildingIdx} x=${nx} z=${nz}`,
+        current_scene: slim,
+      }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      currentScene = data;
+      // Don't reload GLB — the mesh is already at the right position visually.
+      // Just update metadata.
+      updateSceneInfo(data);
+      updateDownloadLinks(data);
+      appendMessage('assistant', `✓ Building #${selectedBuildingIdx} moved`);
+    }
+  } catch (err) {
+    console.error('Move failed:', err);
+  }
+}
+
+viewerEl.addEventListener('mouseup', onDragEnd);
+window.addEventListener('mouseup', () => {
+  if (isDragging) { isDragging = false; controls.enabled = true; }
+});
+
+// ── Building editor sliders + buttons ─────────────
 
 ['bldWidth', 'bldDepth', 'bldHeight', 'bldRotation'].forEach(id => {
   document.getElementById(id).addEventListener('input', (e) => {
