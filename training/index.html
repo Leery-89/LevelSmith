@@ -885,9 +885,9 @@ const raycaster = new THREE.Raycaster();
 const mouseVec = new THREE.Vector2();
 let selectedBuildingIdx = null;
 
-renderer.domElement.addEventListener('click', (event) => {
+viewerEl.addEventListener('click', (event) => {
   if (!currentScene || !currentModel) return;
-  const rect = renderer.domElement.getBoundingClientRect();
+  const rect = viewerEl.getBoundingClientRect();
   mouseVec.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   mouseVec.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(mouseVec, camera);
