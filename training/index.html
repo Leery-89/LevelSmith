@@ -608,10 +608,6 @@ function loadGLB(url) {
     controls.update();
 
     document.getElementById('emptyState').style.display = 'none';
-
-    // Rebuild building-to-mesh mapping after new model loads
-    // (use setTimeout so currentScene is available from the caller)
-    setTimeout(rebuildMeshGroups, 50);
   });
 }
 
@@ -893,57 +889,20 @@ document.getElementById('btnApplyControls').addEventListener('click', async () =
   });
 });
 
-// ── Building Select + Drag ────────────────────────
+// ── Building Select + Drag (data-driven) ─────────
 const raycaster = new THREE.Raycaster();
 const mouseVec = new THREE.Vector2();
 let selectedBuildingIdx = null;
 
-// Per-building mesh grouping (rebuilt after each loadGLB)
-let buildingMeshGroups = [];  // [idx] = [mesh1, mesh2, ...]
-
-function rebuildMeshGroups() {
-  // After loading a GLB, assign each mesh to the nearest building by XZ center.
-  buildingMeshGroups = [];
-  if (!currentModel || !currentScene || !currentScene.building_infos) return;
-  const binfos = currentScene.building_infos;
-  buildingMeshGroups = binfos.map(() => []);
-
-  currentModel.traverse(child => {
-    if (!child.isMesh) return;
-    // Use the mesh's world-space center
-    const box = new THREE.Box3().setFromObject(child);
-    const center = box.getCenter(new THREE.Vector3());
-    // Find nearest building
-    let bestIdx = -1, bestDist = Infinity;
-    for (let i = 0; i < binfos.length; i++) {
-      const dx = center.x - (binfos[i].x || 0);
-      const dz = center.z - (binfos[i].z || 0);
-      const d = Math.sqrt(dx*dx + dz*dz);
-      if (d < bestDist) { bestDist = d; bestIdx = i; }
-    }
-    // Assign to building if reasonably close (within half its diagonal + margin)
-    if (bestIdx >= 0) {
-      const b = binfos[bestIdx];
-      const radius = Math.sqrt((b.width||10)**2 + (b.depth||10)**2) / 2 + 5;
-      if (bestDist < radius) {
-        buildingMeshGroups[bestIdx].push(child);
-      }
-    }
-  });
-}
-
 // Highlight state
 let outlineMesh = null;
-let selectedMeshes = [];  // all meshes of the selected building
 
 // Drag state
 let isDragging = false;
 const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const dragOffset = new THREE.Vector3();
 const dragIntersect = new THREE.Vector3();
-let dragStartPositions = []; // original positions of all meshes (for delta move)
 let mouseDownPos = { x: 0, y: 0 };
-let mouseDownTime = 0;
 
 function updateMouseVec(event) {
   const rect = viewerEl.getBoundingClientRect();
@@ -951,46 +910,40 @@ function updateMouseVec(event) {
   mouseVec.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 }
 
-function findBuildingByMesh(mesh) {
-  // Given a hit mesh, find which building group it belongs to
-  for (let i = 0; i < buildingMeshGroups.length; i++) {
-    if (buildingMeshGroups[i].includes(mesh)) return i;
-  }
-  // Fallback: nearest building by hit point
-  return -1;
-}
-
-function findNearestBuilding(point) {
+function findBuildingAtPoint(groundPt) {
+  // Find the building whose footprint contains the ground point.
+  // Uses placement data (position + width/depth diagonal radius).
   if (!currentScene || !currentScene.building_infos) return -1;
   const binfos = currentScene.building_infos;
   let best = -1, bestD = Infinity;
   for (let i = 0; i < binfos.length; i++) {
-    const dx = point.x - (binfos[i].x || 0);
-    const dz = point.z - (binfos[i].z || 0);
-    const d = Math.sqrt(dx*dx + dz*dz);
-    if (d < bestD) { bestD = d; best = i; }
+    const b = binfos[i];
+    const dx = groundPt.x - (b.x || 0);
+    const dz = groundPt.z - (b.z || 0);
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    const radius = Math.sqrt((b.width || 8) ** 2 + (b.depth || 8) ** 2) / 2;
+    if (dist < radius && dist < bestD) {
+      bestD = dist;
+      best = i;
+    }
   }
-  return (best >= 0 && bestD < 30) ? best : -1;
+  return best;
 }
 
 function highlightBuilding(idx) {
+  // Draw a wireframe box from building_infos data (not from mesh geometry).
   removeHighlight();
-  const meshes = buildingMeshGroups[idx] || [];
-  if (meshes.length === 0) return;
-  selectedMeshes = meshes;
+  const binfos = currentScene && currentScene.building_infos;
+  if (!binfos || idx < 0 || idx >= binfos.length) return;
+  const b = binfos[idx];
+  const w = b.width || 8, d = b.depth || 8, h = b.height || 8;
 
-  // Compute combined bounding box of all building meshes
-  const box = new THREE.Box3();
-  for (const m of meshes) box.expandByObject(m);
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-
-  // Create wireframe box around the whole building
-  const geo = new THREE.BoxGeometry(size.x * 1.04, size.y * 1.04, size.z * 1.04);
+  const geo = new THREE.BoxGeometry(w, h, d);
   const edges = new THREE.EdgesGeometry(geo);
   outlineMesh = new THREE.LineSegments(edges,
     new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 }));
-  outlineMesh.position.copy(center);
+  outlineMesh.position.set(b.x || 0, h / 2, b.z || 0);
+  outlineMesh.rotation.y = THREE.MathUtils.degToRad(b.yaw_deg || 0);
   scene.add(outlineMesh);
   geo.dispose();
 }
@@ -1002,7 +955,6 @@ function removeHighlight() {
     outlineMesh.material.dispose();
     outlineMesh = null;
   }
-  selectedMeshes = [];
 }
 
 function selectBuilding(idx) {
@@ -1018,8 +970,8 @@ function selectBuilding(idx) {
   document.getElementById('bldWidthVal').textContent = (b.width || 8).toFixed(1);
   document.getElementById('bldDepth').value = b.depth || 8;
   document.getElementById('bldDepthVal').textContent = (b.depth || 8).toFixed(1);
-  document.getElementById('bldHeight').value = 8;
-  document.getElementById('bldHeightVal').textContent = '8.0';
+  document.getElementById('bldHeight').value = b.height || 8;
+  document.getElementById('bldHeightVal').textContent = (b.height || 8).toFixed(1);
   document.getElementById('bldRotation').value = b.yaw_deg || 0;
   document.getElementById('bldRotationVal').textContent = Math.round(b.yaw_deg || 0);
   document.getElementById('bldPosX').textContent = (b.x || 0).toFixed(1);
@@ -1034,90 +986,60 @@ function deselectBuilding() {
 
 // ── Mouse handlers: click vs drag ────────────────
 
-// ── Mouse handlers: click vs drag (whole building) ──
+// ── Mouse handlers: click vs drag ────────────────
 
 viewerEl.addEventListener('mousedown', (event) => {
   if (event.button !== 0 || !currentScene || !currentModel) return;
   mouseDownPos.x = event.clientX;
   mouseDownPos.y = event.clientY;
-  mouseDownTime = Date.now();
 
   updateMouseVec(event);
   raycaster.setFromCamera(mouseVec, camera);
 
-  const allMeshes = [];
-  currentModel.traverse(c => { if (c.isMesh) allMeshes.push(c); });
-  const hits = raycaster.intersectObjects(allMeshes, false);
+  // Intersect with the ground plane to get a world XZ point
+  const groundPt = new THREE.Vector3();
+  const hit = raycaster.ray.intersectPlane(dragPlane, groundPt);
+  if (!hit) return;
 
-  if (hits.length > 0) {
-    const hit = hits[0];
-    // Find which building this mesh belongs to
-    let idx = findBuildingByMesh(hit.object);
-    if (idx < 0) idx = findNearestBuilding(hit.point);
+  // Find which building's footprint contains this point
+  const idx = findBuildingAtPoint(groundPt);
 
-    if (idx >= 0) {
-      selectBuilding(idx);
-      highlightBuilding(idx);
+  if (idx >= 0) {
+    selectBuilding(idx);
+    highlightBuilding(idx);
 
-      // Prepare for potential drag: compute the building group's centroid
-      // on the ground plane, and store the offset from the ray intersection
-      const binfos = currentScene.building_infos;
-      const bx = binfos[idx].x || 0;
-      const bz = binfos[idx].z || 0;
-      raycaster.ray.intersectPlane(dragPlane, dragIntersect);
-      dragOffset.set(bx - dragIntersect.x, 0, bz - dragIntersect.z);
+    // Prepare drag: offset from click to building center
+    const b = currentScene.building_infos[idx];
+    dragOffset.set((b.x || 0) - groundPt.x, 0, (b.z || 0) - groundPt.z);
 
-      // Store starting positions of all meshes so we can apply a delta
-      const meshes = buildingMeshGroups[idx] || [];
-      dragStartPositions = meshes.map(m => ({
-        mesh: m, x: m.position.x, z: m.position.z
-      }));
-
-      isDragging = true;
-      controls.enabled = false;
-      return;
-    }
+    isDragging = true;
+    controls.enabled = false;
+  } else {
+    deselectBuilding();
   }
-  deselectBuilding();
 });
 
 viewerEl.addEventListener('mousemove', (event) => {
-  if (!isDragging || selectedMeshes.length === 0) return;
+  if (!isDragging || selectedBuildingIdx === null) return;
 
   const dx = event.clientX - mouseDownPos.x;
   const dy = event.clientY - mouseDownPos.y;
-  if (Math.sqrt(dx*dx + dy*dy) < 5) return;
+  if (Math.sqrt(dx * dx + dy * dy) < 5) return;
 
   updateMouseVec(event);
   raycaster.setFromCamera(mouseVec, camera);
   raycaster.ray.intersectPlane(dragPlane, dragIntersect);
 
-  // New building center
   const newX = dragIntersect.x + dragOffset.x;
   const newZ = dragIntersect.z + dragOffset.z;
 
-  // Compute delta from original building position
-  const binfos = currentScene.building_infos;
-  const origX = binfos[selectedBuildingIdx].x || 0;
-  const origZ = binfos[selectedBuildingIdx].z || 0;
-  const deltaX = newX - origX;
-  const deltaZ = newZ - origZ;
-
-  // Move ALL meshes of this building by the delta
-  for (const sp of dragStartPositions) {
-    sp.mesh.position.x = sp.x + deltaX;
-    sp.mesh.position.z = sp.z + deltaZ;
-  }
-
-  // Move highlight box too
+  // Move the highlight box to track the cursor
   if (outlineMesh) {
-    // Recompute from moved meshes
-    const box = new THREE.Box3();
-    for (const m of selectedMeshes) box.expandByObject(m);
-    box.getCenter(outlineMesh.position);
+    outlineMesh.position.x = newX;
+    outlineMesh.position.z = newZ;
   }
 
-  // Live update position display
+  // Live-update position display
   document.getElementById('bldPosX').textContent = newX.toFixed(1);
   document.getElementById('bldPosZ').textContent = newZ.toFixed(1);
 });
@@ -1129,23 +1051,25 @@ async function onDragEnd(event) {
 
   const dx = event.clientX - mouseDownPos.x;
   const dy = event.clientY - mouseDownPos.y;
-  const dist = Math.sqrt(dx*dx + dy*dy);
+  const dist = Math.sqrt(dx * dx + dy * dy);
 
+  // Click (< 5px): select only, no move
   if (dist < 5 || selectedBuildingIdx === null || !currentScene) return;
 
-  // Read the new position from the display (computed during mousemove)
+  // Read new position from the live display
   const newX = parseFloat(document.getElementById('bldPosX').textContent);
   const newZ = parseFloat(document.getElementById('bldPosZ').textContent);
   if (isNaN(newX) || isNaN(newZ)) return;
 
-  // Update building_infos locally
+  // Update local data
   const binfos = currentScene.building_infos || [];
   if (selectedBuildingIdx < binfos.length) {
     binfos[selectedBuildingIdx].x = newX;
     binfos[selectedBuildingIdx].z = newZ;
   }
 
-  // Submit to backend (don't reload GLB — meshes are already moved visually)
+  // Submit to backend: rebuild mesh at new position
+  const pendingMsg = appendPendingMessage('Moving building...');
   try {
     const slim = { parsed: currentScene.parsed, stats: currentScene.stats,
                    classification: currentScene.classification,
@@ -1158,14 +1082,17 @@ async function onDragEnd(event) {
         current_scene: slim,
       }),
     });
+    pendingMsg.remove();
     if (resp.ok) {
       const data = await resp.json();
       currentScene = data;
+      loadGLB(data.glb_url);  // reload to see the building at its new position
       updateSceneInfo(data);
       updateDownloadLinks(data);
       appendMessage('assistant', `✓ Building #${selectedBuildingIdx} moved`);
     }
   } catch (err) {
+    pendingMsg.remove();
     console.error('Move failed:', err);
   }
 }
