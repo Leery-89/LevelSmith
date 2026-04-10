@@ -677,6 +677,11 @@ async def edit_scene(req: EditRequest):
         if json_path and json_path.exists():
             placement = json.loads(json_path.read_text(encoding="utf-8"))
             placement = apply_direct_edit(direct, placement)
+            # Validate and auto-fix
+            from scene_validator import validate_placement
+            validation = validate_placement(placement)
+            if validation["fixes_applied"]:
+                direct["summary"] = direct.get("summary", "") + f" (auto-fixed {len(validation['fixes_applied'])} issues)"
             # Rebuild mesh from modified placement
             t0 = time.time()
             rebuilt_scene = _regenerate_from_placement(placement)
@@ -785,6 +790,17 @@ async def edit_scene(req: EditRequest):
         cs_parsed.get("seed", 42),
     )
     placement = apply_edit_to_placement(edit, placement)
+
+    # Validate and auto-fix the modified placement
+    from scene_validator import validate_placement
+    validation = validate_placement(placement)
+    if validation["fixes_applied"]:
+        n_fixes = len(validation["fixes_applied"])
+        summary += f"\n(auto-fixed {n_fixes} issue{'s' if n_fixes > 1 else ''})"
+        try:
+            print(f"[EDIT] validator: {validation['fixes_applied']}")
+        except Exception:
+            pass
 
     # Rebuild mesh from modified placement
     t0 = time.time()

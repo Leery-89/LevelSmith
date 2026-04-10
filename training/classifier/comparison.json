@@ -162,5 +162,26 @@
       }
     }
   ],
-  "best_config": "v3_mlp_mpnet_style"
+  "best_config": "v3_mlp_mpnet_style",
+  "v4_cv": {
+    "top1": 0.2205882415175438,
+    "top2": 0.3205882400274277,
+    "top3": 0.42058823704719545,
+    "macro_f1": 0.13354761446225097,
+    "inst": 0.11428571428571428,
+    "wall": 0.0,
+    "top1_std": 0.14910343764167422,
+    "f1_per_family": {
+      "border_redoubt": 0.1880184331797235,
+      "industrial_district": 0.20285714285714285,
+      "institutional_compound": 0.11428571428571428,
+      "manor_estate": 0.08623548922056384,
+      "mountain_fortress": 0.08571428571428572,
+      "open_settlement": 0.125,
+      "royal_palace": 0.14285714285714285,
+      "temple_complex": 0.1841269841269841,
+      "underground_ruin": 0.2063809523809524,
+      "walled_settlement": 0.0
+    }
+  }
 }
