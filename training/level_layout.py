@@ -1424,10 +1424,10 @@ def _make_organic_roads(roads: list, style: str, road_w: float = 3.5) -> list:
                 continue
             angle = math.atan2(dz, dx)
             mx, mz = (x0 + x1) / 2, (z0 + z1) / 2
-            m = trimesh.creation.box(extents=[seg_len + 0.1, 0.05, road_w])
+            m = trimesh.creation.box(extents=[seg_len + 0.1, 0.20, road_w])
             rot = trimesh.transformations.rotation_matrix(angle, [0, 1, 0])
             m.apply_transform(rot)
-            m.apply_translation([mx, 0.025, mz])
+            m.apply_translation([mx, 0.10, mz])
             c = np.array(road_c, dtype=np.uint8)
             m.visual.face_colors = np.tile(c, (len(m.faces), 1))
             meshes.append(m)
@@ -1467,8 +1467,8 @@ def _make_street_road(area_w: float, area_d: float,
     if not building_infos:
         road_len = x_hi - x_lo
         return [_colored_box(
-            [road_len, 0.05, road_w],
-            [(x_lo + x_hi) / 2, 0.025, road_z],
+            [road_len, 0.20, road_w],
+            [(x_lo + x_hi) / 2, 0.10, road_z],
             road_c)]
 
     # Collect X-ranges blocked by buildings on the road
@@ -1499,8 +1499,8 @@ def _make_street_road(area_w: float, area_d: float,
         if seg_len > 1.0:
             cx = (x_start + blo) / 2
             meshes.append(_colored_box(
-                [seg_len, 0.05, road_w],
-                [cx, 0.025, road_z],
+                [seg_len, 0.20, road_w],
+                [cx, 0.10, road_z],
                 road_c))
         x_start = bhi
 
@@ -1509,8 +1509,8 @@ def _make_street_road(area_w: float, area_d: float,
     if seg_len > 1.0:
         cx = (x_start + x_hi) / 2
         meshes.append(_colored_box(
-            [seg_len, 0.05, street_w],
-            [cx, 0.025, road_z],
+            [seg_len, 0.20, street_w],
+            [cx, 0.10, road_z],
             road_c))
 
     return meshes
@@ -4028,7 +4028,7 @@ def generate_level(
     if layout_type == "organic":
         print(f"  Anchor    : {anchor_style}")
 
-    # ── Mesh cleanup: fix normals, remove degenerate geometry ─────
+    # ── Mesh cleanup: fix normals, remove degenerate/duplicate geometry ──
     for _gname, geom in scene.geometry.items():
         if isinstance(geom, trimesh.Trimesh):
             geom.merge_vertices()
@@ -4036,6 +4036,9 @@ def generate_level(
             mask = geom.nondegenerate_faces()
             if not mask.all():
                 geom.update_faces(mask)
+            # Remove exact duplicate faces
+            if hasattr(geom, 'unique_faces'):
+                geom.update_faces(geom.unique_faces())
             trimesh.repair.fix_normals(geom)
 
     # ── Build and store placement JSON ─────────────────────────────

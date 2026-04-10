@@ -524,7 +524,11 @@ Each generated scene includes:
 | ✅ Gate-road alignment | Shapely intersection, auto gate detection |
 | ✅ Organic/random optimization | 6 naturalness enhancements |
 | ✅ Per-building style mixing | Different style_key per building slot |
-| ✅ Web interface | FastAPI + Three.js + sidebar archetype display |
+| ✅ Web interface | FastAPI + Three.js chat panel + scene info |
+| ✅ Graph family classifier | MLP on MPNet 768-d + style one-hot, 57.6% top-1 / 85.3% top-3 |
+| ✅ LLM edit intent parser | DeepSeek-powered natural language scene editing (7 intents) |
+| ✅ 5 frozen showcases | medieval_keep, japanese_temple, industrial, fantasy_palace, horror_asylum |
+| ✅ UE5 assembly script | Building decomposition + enclosure extras (parapets, battlements, gate pillars) |
 
 ### Planned (v1.0)
 

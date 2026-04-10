@@ -46,6 +46,28 @@ SHOWCASES = [
         "seed": 42,
         "min_gap": 5.0,
     },
+    {
+        "name": "fantasy_palace_courtyard",
+        "style": "fantasy_palace",
+        "layout_type": "plaza",
+        "building_count": 8,
+        "area_size": 100,
+        "area_w": 100,
+        "area_d": 100,
+        "seed": 42,
+        "min_gap": 4.0,
+    },
+    {
+        "name": "horror_asylum_compound",
+        "style": "horror_asylum",
+        "layout_type": "random",
+        "building_count": 7,
+        "area_size": 90,
+        "area_w": 90,
+        "area_d": 90,
+        "seed": 42,
+        "min_gap": 3.0,
+    },
 ]
 
 

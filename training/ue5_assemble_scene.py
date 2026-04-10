@@ -69,7 +69,7 @@ ROOF_COLOR = (0.35, 0.25, 0.2)     # dark brown-red
 
 ROOF_SLAB_THICKNESS = 0.15         # meters — thickness of slope slabs
 FLOOR_THICKNESS = 0.2              # meters
-WIN_PROTRUSION = 0.05              # meters — how far window cubes stick out
+WIN_RECESS = 0.05                  # meters — how far window cubes are inset into wall
 
 
 def m_to_cm(m):
@@ -299,24 +299,24 @@ def _building_parts(b):
         "z_cm": h_cm / 2, "sx": t, "sy": d, "sz": h,
     })
 
-    # ── Windows (surface-mounted thin cubes) ──
+    # ── Windows (recessed dark cubes inset into wall surface) ──
     win_data = b["windows"][0] if b.get("windows") else None
     if win_data and win_data.get("density", 0) > 0:
         ww = win_data["width"]
         wh = win_data["height"]
         dens = win_data["density"]
         win_z = h_cm * 0.6       # 60% up the wall
-        p = m_to_cm(WIN_PROTRUSION) / 2  # half protrusion in cm
+        r = m_to_cm(WIN_RECESS) / 2  # half recess into wall (cm)
 
-        # Back wall windows (along X)
+        # Back wall windows (along X) — recessed INTO wall (dy < outer face)
         n = max(1, round(w * dens * 3))
         for i in range(n):
             parts.append({
                 "tag": f"win_B{i}",
                 "dx_cm": -half_w_cm + (i + 0.5) / n * m_to_cm(w),
-                "dy_cm": half_d_cm + p,
+                "dy_cm": half_d_cm - r,
                 "z_cm": win_z,
-                "sx": ww, "sy": WIN_PROTRUSION, "sz": wh,
+                "sx": ww, "sy": WIN_RECESS, "sz": wh,
             })
 
         # Left wall windows (along Y)
@@ -324,21 +324,112 @@ def _building_parts(b):
         for i in range(n_s):
             parts.append({
                 "tag": f"win_L{i}",
-                "dx_cm": -(half_w_cm + p),
+                "dx_cm": -(half_w_cm - r),
                 "dy_cm": -half_d_cm + (i + 0.5) / n_s * m_to_cm(d),
                 "z_cm": win_z,
-                "sx": WIN_PROTRUSION, "sy": ww, "sz": wh,
+                "sx": WIN_RECESS, "sy": ww, "sz": wh,
             })
 
         # Right wall windows (along Y)
         for i in range(n_s):
             parts.append({
                 "tag": f"win_R{i}",
-                "dx_cm": half_w_cm + p,
+                "dx_cm": half_w_cm - r,
                 "dy_cm": -half_d_cm + (i + 0.5) / n_s * m_to_cm(d),
                 "z_cm": win_z,
-                "sx": WIN_PROTRUSION, "sy": ww, "sz": wh,
+                "sx": WIN_RECESS, "sy": ww, "sz": wh,
             })
+
+    return parts
+
+
+def _enclosure_extras(walls, gates, style_key=""):
+    """Generate extra parts for enclosure walls: parapet caps, battlements,
+    gate pillars.  Returns list of slab dicts (same format as _building_parts).
+
+    Each slab: {tag, x_cm, y_cm, z_cm, sx, sy, sz}  (world coords, no yaw).
+    """
+    parts = []
+    PARAPET_H = 0.05  # 5cm cap on top of wall
+
+    for w in walls:
+        sx, sz = w["start"]["x"], w["start"]["z"]
+        ex, ez = w["end"]["x"], w["end"]["z"]
+        wh = w["height"]
+        wt = w["thickness"]
+        dx = ex - sx
+        dz = ez - sz
+        length = math.hypot(dx, dz)
+        if length < 0.5:
+            continue
+        mx = (sx + ex) / 2
+        mz = (sz + ez) / 2
+        yaw = math.degrees(math.atan2(dz, dx))
+
+        # Parapet cap: thin slab on top of wall, slightly wider
+        parts.append({
+            "tag": "parapet",
+            "x_cm": m_to_cm(mx), "y_cm": m_to_cm(mz),
+            "z_cm": m_to_cm(wh) + m_to_cm(PARAPET_H) / 2,
+            "sx": length + 0.1, "sy": wt + 0.1, "sz": PARAPET_H,
+            "yaw": yaw,
+        })
+
+        # Battlements: small blocks along the top (medieval/fantasy styles only)
+        if any(kw in style_key for kw in ("medieval", "fantasy", "horror", "desert")):
+            spacing_m = 2.0
+            n_merlons = max(1, int(length / spacing_m))
+            merlon_w = 0.4
+            merlon_h = 0.5
+            for i in range(n_merlons):
+                t = (i + 0.5) / n_merlons  # 0..1 along wall
+                bx = sx + dx * t
+                bz = sz + dz * t
+                parts.append({
+                    "tag": "merlon",
+                    "x_cm": m_to_cm(bx), "y_cm": m_to_cm(bz),
+                    "z_cm": m_to_cm(wh + PARAPET_H) + m_to_cm(merlon_h) / 2,
+                    "sx": merlon_w, "sy": wt, "sz": merlon_h,
+                    "yaw": yaw,
+                })
+
+    # Gate pillars: two tall cubes flanking each gate gap
+    for g in (gates or []):
+        gx = g["position"]["x"]
+        gz = g["position"]["z"]
+        gw = g["width"]
+        gh = g.get("height", 2.5)
+        side = g.get("wall_side", "")
+
+        pillar_h = gh * 1.2
+        pillar_w = 0.6
+        pillar_d = 0.6
+
+        # Determine perpendicular offset for pillars at gate edges
+        if side in ("south", "north"):
+            # Wall runs along X; pillars offset in X
+            for sign in (-1, +1):
+                px = gx + sign * (gw / 2 + pillar_w / 2)
+                pz = gz
+                parts.append({
+                    "tag": "gate_pillar",
+                    "x_cm": m_to_cm(px), "y_cm": m_to_cm(pz),
+                    "z_cm": m_to_cm(pillar_h) / 2,
+                    "sx": pillar_w, "sy": pillar_d, "sz": pillar_h,
+                    "yaw": 0,
+                })
+        elif side in ("east", "west"):
+            # Wall runs along Z; pillars offset in Z
+            for sign in (-1, +1):
+                px = gx
+                pz = gz + sign * (gw / 2 + pillar_w / 2)
+                parts.append({
+                    "tag": "gate_pillar",
+                    "x_cm": m_to_cm(px), "y_cm": m_to_cm(pz),
+                    "z_cm": m_to_cm(pillar_h) / 2,
+                    "sx": pillar_w, "sy": pillar_d, "sz": pillar_h,
+                    "yaw": 0,
+                })
 
     return parts
 
@@ -504,6 +595,23 @@ def assemble_in_ue(data):
         unreal.log(f"Placed {len(enc_walls)} wall segments "
                    f"({len(data.get('gates', []))} gates)")
 
+    # ── Enclosure extras: parapet caps, battlements, gate pillars ──
+    style_key = data.get("scene", {}).get("style_key", "")
+    extras = _enclosure_extras(enc_walls, data.get("gates", []), style_key)
+    for ex in extras:
+        loc = unreal.Vector(ex["x_cm"], ex["y_cm"], ex["z_cm"])
+        actor = unreal.EditorLevelLibrary.spawn_actor_from_class(
+            unreal.StaticMeshActor, loc)
+        actor.static_mesh_component.set_static_mesh(cube_mesh)
+        actor.set_actor_scale3d(
+            unreal.Vector(ex["sx"], ex["sy"], ex["sz"]))
+        actor.set_actor_rotation(
+            unreal.Rotator(pitch=0, yaw=ex.get("yaw", 0), roll=0), False)
+        actor.set_actor_label(f"{folder_name}/{ex['tag']}")
+        actor.set_folder_path(f"{folder_name}/walls")
+    if extras:
+        unreal.log(f"Placed {len(extras)} enclosure extras")
+
     unreal.log(f"=== LevelSmith scene assembled: {folder_name} ===")
 
 
@@ -609,6 +717,16 @@ def dry_run(data):
                   f"({ue_x:8.0f}, {ue_y:8.0f}, {ue_z:7.0f})  "
                   f"(  0, {yaw:6.1f},   0)  "
                   f"({length_m:5.1f}, {w['thickness']:5.1f}, {w['height']:5.1f})")
+
+    # ── Enclosure extras summary ──
+    style_key = data.get("scene", {}).get("style_key", "")
+    extras = _enclosure_extras(enc_walls, raw_gates, style_key)
+    if extras:
+        from collections import Counter
+        ecounts = Counter(e["tag"] for e in extras)
+        print(f"\n  Enclosure extras ({len(extras)}):")
+        for tag, cnt in ecounts.most_common():
+            print(f"    {tag}: {cnt}")
 
     print(f"\n  Roads: {len(data.get('roads', []))} segments")
     print(f"  Ground material hint: {data['ground']['material_hint']}")

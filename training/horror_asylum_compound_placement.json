@@ -1,0 +1,847 @@
+{
+  "version": "0.1",
+  "scene": {
+    "area_width": 90,
+    "area_depth": 90,
+    "style_key": "horror_asylum",
+    "layout_type": "random",
+    "seed": 42
+  },
+  "buildings": [
+    {
+      "id": 0,
+      "role": "primary",
+      "position": {
+        "x": 69.64,
+        "y": 0.0,
+        "z": 37.85
+      },
+      "rotation_deg": 354.6,
+      "width": 16.8,
+      "depth": 13.4,
+      "height": 3.82,
+      "style_key": "horror_asylum",
+      "roof": {
+        "type": "hipped",
+        "type_id": 2,
+        "pitch": 0.4,
+        "eave_overhang": 0.1
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.09,
+          "height": 2.39
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.25,
+          "width": 0.5,
+          "height": 0.7,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": true,
+        "column_count": 2,
+        "wall_thickness": 0.8,
+        "subdivision": 2
+      }
+    },
+    {
+      "id": 1,
+      "role": "secondary",
+      "position": {
+        "x": 23.63,
+        "y": 0.0,
+        "z": 64.08
+      },
+      "rotation_deg": 359.0,
+      "width": 16.8,
+      "depth": 13.0,
+      "height": 4.1,
+      "style_key": "horror_asylum",
+      "roof": {
+        "type": "hipped",
+        "type_id": 2,
+        "pitch": 0.4,
+        "eave_overhang": 0.1
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.09,
+          "height": 2.39
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.325,
+          "width": 0.5,
+          "height": 0.7,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": true,
+        "column_count": 1,
+        "wall_thickness": 0.8,
+        "subdivision": 2
+      }
+    },
+    {
+      "id": 2,
+      "role": "tertiary",
+      "position": {
+        "x": 75.16,
+        "y": 0.0,
+        "z": 57.92
+      },
+      "rotation_deg": 10.0,
+      "width": 13.5,
+      "depth": 10.3,
+      "height": 3.9,
+      "style_key": "horror_asylum",
+      "roof": {
+        "type": "hipped",
+        "type_id": 2,
+        "pitch": 0.4,
+        "eave_overhang": 0.07
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.09,
+          "height": 2.39
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.35,
+          "width": 0.5,
+          "height": 0.7,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.64,
+        "subdivision": 2
+      }
+    },
+    {
+      "id": 3,
+      "role": "tertiary",
+      "position": {
+        "x": 55.17,
+        "y": 0.0,
+        "z": 58.59
+      },
+      "rotation_deg": 317.8,
+      "width": 13.9,
+      "depth": 12.5,
+      "height": 3.65,
+      "style_key": "horror_asylum",
+      "roof": {
+        "type": "hipped",
+        "type_id": 2,
+        "pitch": 0.4,
+        "eave_overhang": 0.07
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 1.09,
+          "height": 2.39
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.35,
+          "width": 0.5,
+          "height": 0.7,
+          "shape": "rectangular",
+          "shape_id": 0
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.64,
+        "subdivision": 2
+      }
+    }
+  ],
+  "walls": [
+    {
+      "id": 0,
+      "side": "south",
+      "start": {
+        "x": 2.0,
+        "z": 2.0
+      },
+      "end": {
+        "x": 88.0,
+        "z": 2.0
+      },
+      "height": 2.5,
+      "thickness": 0.5
+    },
+    {
+      "id": 1,
+      "side": "north",
+      "start": {
+        "x": 2.0,
+        "z": 88.0
+      },
+      "end": {
+        "x": 88.0,
+        "z": 88.0
+      },
+      "height": 2.5,
+      "thickness": 0.5
+    },
+    {
+      "id": 2,
+      "side": "west",
+      "start": {
+        "x": 2.0,
+        "z": 2.0
+      },
+      "end": {
+        "x": 2.0,
+        "z": 88.0
+      },
+      "height": 2.5,
+      "thickness": 0.5
+    },
+    {
+      "id": 3,
+      "side": "east",
+      "start": {
+        "x": 88.0,
+        "z": 2.0
+      },
+      "end": {
+        "x": 88.0,
+        "z": 88.0
+      },
+      "height": 2.5,
+      "thickness": 0.5
+    }
+  ],
+  "gates": [
+    {
+      "id": 0,
+      "wall_side": "east",
+      "position": {
+        "x": 88.0,
+        "z": 40.23
+      },
+      "width": 6.0,
+      "height": 2.5
+    }
+  ],
+  "roads": [
+    {
+      "id": 0,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 84.0,
+          "z": 40.23
+        },
+        {
+          "x": 82.52,
+          "z": 41.63
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 82.52,
+          "z": 41.63
+        },
+        {
+          "x": 81.03,
+          "z": 43.02
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 81.03,
+          "z": 43.02
+        },
+        {
+          "x": 79.55,
+          "z": 44.41
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 79.55,
+          "z": 44.41
+        },
+        {
+          "x": 78.07,
+          "z": 45.8
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 78.07,
+          "z": 45.8
+        },
+        {
+          "x": 76.59,
+          "z": 47.2
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 76.59,
+          "z": 47.2
+        },
+        {
+          "x": 75.1,
+          "z": 48.59
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 75.1,
+          "z": 48.59
+        },
+        {
+          "x": 73.62,
+          "z": 49.98
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 73.62,
+          "z": 49.98
+        },
+        {
+          "x": 72.14,
+          "z": 51.38
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 72.14,
+          "z": 51.38
+        },
+        {
+          "x": 67.69,
+          "z": 55.56
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 67.69,
+          "z": 55.56
+        },
+        {
+          "x": 67.69,
+          "z": 55.56
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 67.69,
+          "z": 55.56
+        },
+        {
+          "x": 66.03,
+          "z": 55.61
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 66.03,
+          "z": 55.61
+        },
+        {
+          "x": 64.36,
+          "z": 55.66
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 6.0,
+          "z": 67.31
+        },
+        {
+          "x": 7.85,
+          "z": 65.9
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 7.85,
+          "z": 65.9
+        },
+        {
+          "x": 9.7,
+          "z": 64.48
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 9.7,
+          "z": 64.48
+        },
+        {
+          "x": 11.54,
+          "z": 63.06
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 11.54,
+          "z": 63.06
+        },
+        {
+          "x": 13.39,
+          "z": 61.65
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 13.39,
+          "z": 61.65
+        },
+        {
+          "x": 13.39,
+          "z": 61.65
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 13.39,
+          "z": 61.65
+        },
+        {
+          "x": 14.44,
+          "z": 59.89
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 14.44,
+          "z": 59.89
+        },
+        {
+          "x": 16.54,
+          "z": 56.37
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 16.54,
+          "z": 56.37
+        },
+        {
+          "x": 17.58,
+          "z": 54.62
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 17.58,
+          "z": 54.62
+        },
+        {
+          "x": 18.63,
+          "z": 52.86
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 18.63,
+          "z": 52.86
+        },
+        {
+          "x": 19.68,
+          "z": 51.1
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 19.68,
+          "z": 51.1
+        },
+        {
+          "x": 20.73,
+          "z": 49.35
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 20.73,
+          "z": 49.35
+        },
+        {
+          "x": 21.77,
+          "z": 47.59
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 21.77,
+          "z": 47.59
+        },
+        {
+          "x": 22.82,
+          "z": 45.83
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 22.82,
+          "z": 45.83
+        },
+        {
+          "x": 23.87,
+          "z": 44.08
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 23.87,
+          "z": 44.08
+        },
+        {
+          "x": 24.92,
+          "z": 42.32
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 84.0,
+          "z": 56.22
+        },
+        {
+          "x": 72.64,
+          "z": 51.52
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 72.64,
+          "z": 51.52
+        },
+        {
+          "x": 70.74,
+          "z": 50.74
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 70.74,
+          "z": 50.74
+        },
+        {
+          "x": 68.85,
+          "z": 49.96
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 68.85,
+          "z": 49.96
+        },
+        {
+          "x": 68.85,
+          "z": 49.96
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 68.85,
+          "z": 49.96
+        },
+        {
+          "x": 67.57,
+          "z": 48.35
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 67.57,
+          "z": 48.35
+        },
+        {
+          "x": 66.28,
+          "z": 46.75
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 66.28,
+          "z": 46.75
+        },
+        {
+          "x": 65.0,
+          "z": 45.15
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "type": "secondary",
+      "width": 3.0,
+      "points": [
+        {
+          "x": 84.0,
+          "z": 40.23
+        },
+        {
+          "x": 6.0,
+          "z": 67.31
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "type": "secondary",
+      "width": 3.0,
+      "points": [
+        {
+          "x": 84.0,
+          "z": 40.23
+        },
+        {
+          "x": 84.0,
+          "z": 56.22
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "type": "access",
+      "width": 2.0,
+      "points": [
+        {
+          "x": 69.64,
+          "z": 37.85
+        },
+        {
+          "x": 65.0,
+          "z": 45.15
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "type": "access",
+      "width": 2.0,
+      "points": [
+        {
+          "x": 23.63,
+          "z": 64.08
+        },
+        {
+          "x": 14.44,
+          "z": 59.89
+        }
+      ]
+    }
+  ],
+  "ground": {
+    "type": "flat",
+    "material_hint": "dirt"
+  },
+  "metadata": {
+    "building_count": 4,
+    "coverage_ratio": 0.093,
+    "role_distribution": {
+      "primary": 1,
+      "secondary": 1,
+      "tertiary": 2
+    }
+  }
+}

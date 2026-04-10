@@ -1,0 +1,878 @@
+{
+  "version": "0.1",
+  "scene": {
+    "area_width": 100,
+    "area_depth": 100,
+    "style_key": "fantasy_palace",
+    "layout_type": "plaza",
+    "seed": 42
+  },
+  "buildings": [
+    {
+      "id": 0,
+      "role": "primary",
+      "position": {
+        "x": 83.38,
+        "y": 0.0,
+        "z": 51.1
+      },
+      "rotation_deg": 80.1,
+      "width": 18.8,
+      "depth": 14.9,
+      "height": 15.22,
+      "style_key": "fantasy_palace",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.9,
+        "eave_overhang": 0.2
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 2.21,
+          "height": 4.4
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.3,
+          "width": 0.9,
+          "height": 2.0,
+          "shape": "round_arch",
+          "shape_id": 2
+        }
+      ],
+      "features": {
+        "has_battlements": true,
+        "has_arch": true,
+        "column_count": 2,
+        "wall_thickness": 0.8,
+        "subdivision": 3
+      }
+    },
+    {
+      "id": 1,
+      "role": "tertiary",
+      "position": {
+        "x": 72.58,
+        "y": 0.0,
+        "z": 75.31
+      },
+      "rotation_deg": 28.5,
+      "width": 18.4,
+      "depth": 12.5,
+      "height": 18.92,
+      "style_key": "fantasy_palace",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.9,
+        "eave_overhang": 0.14
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 2.21,
+          "height": 4.4
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.35,
+          "width": 0.9,
+          "height": 2.0,
+          "shape": "round_arch",
+          "shape_id": 2
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.64,
+        "subdivision": 3
+      }
+    },
+    {
+      "id": 2,
+      "role": "ambient",
+      "position": {
+        "x": 25.48,
+        "y": 0.0,
+        "z": 72.69
+      },
+      "rotation_deg": 306.2,
+      "width": 15.3,
+      "depth": 14.3,
+      "height": 15.79,
+      "style_key": "fantasy_palace",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.9,
+        "eave_overhang": 0.1
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 2.21,
+          "height": 4.4
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.05,
+          "width": 0.9,
+          "height": 2.0,
+          "shape": "round_arch",
+          "shape_id": 2
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.8,
+        "subdivision": 1
+      }
+    },
+    {
+      "id": 3,
+      "role": "secondary",
+      "position": {
+        "x": 16.32,
+        "y": 0.0,
+        "z": 48.67
+      },
+      "rotation_deg": 261.6,
+      "width": 18.2,
+      "depth": 13.5,
+      "height": 18.62,
+      "style_key": "fantasy_palace",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.9,
+        "eave_overhang": 0.2
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 2.21,
+          "height": 4.4
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.39,
+          "width": 0.9,
+          "height": 2.0,
+          "shape": "round_arch",
+          "shape_id": 2
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": true,
+        "column_count": 1,
+        "wall_thickness": 0.8,
+        "subdivision": 3
+      }
+    },
+    {
+      "id": 4,
+      "role": "tertiary",
+      "position": {
+        "x": 27.27,
+        "y": 0.0,
+        "z": 24.54
+      },
+      "rotation_deg": 226.6,
+      "width": 18.4,
+      "depth": 12.8,
+      "height": 16.84,
+      "style_key": "fantasy_palace",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.9,
+        "eave_overhang": 0.14
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 2.21,
+          "height": 4.4
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.35,
+          "width": 0.9,
+          "height": 2.0,
+          "shape": "round_arch",
+          "shape_id": 2
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.64,
+        "subdivision": 3
+      }
+    },
+    {
+      "id": 5,
+      "role": "ambient",
+      "position": {
+        "x": 74.77,
+        "y": 0.0,
+        "z": 27.86
+      },
+      "rotation_deg": 133.5,
+      "width": 16.1,
+      "depth": 14.0,
+      "height": 15.88,
+      "style_key": "fantasy_palace",
+      "roof": {
+        "type": "pagoda",
+        "type_id": 3,
+        "pitch": 0.9,
+        "eave_overhang": 0.1
+      },
+      "doors": [
+        {
+          "wall": "front",
+          "offset_ratio": 0.5,
+          "width": 2.21,
+          "height": 4.4
+        }
+      ],
+      "windows": [
+        {
+          "wall": "all",
+          "density": 0.05,
+          "width": 0.9,
+          "height": 2.0,
+          "shape": "round_arch",
+          "shape_id": 2
+        }
+      ],
+      "features": {
+        "has_battlements": false,
+        "has_arch": false,
+        "column_count": 0,
+        "wall_thickness": 0.8,
+        "subdivision": 1
+      }
+    }
+  ],
+  "walls": [
+    {
+      "id": 0,
+      "side": "south",
+      "start": {
+        "x": 2.0,
+        "z": 2.0
+      },
+      "end": {
+        "x": 98.0,
+        "z": 2.0
+      },
+      "height": 2.5,
+      "thickness": 0.5
+    },
+    {
+      "id": 1,
+      "side": "north",
+      "start": {
+        "x": 2.0,
+        "z": 98.0
+      },
+      "end": {
+        "x": 98.0,
+        "z": 98.0
+      },
+      "height": 2.5,
+      "thickness": 0.5
+    },
+    {
+      "id": 2,
+      "side": "west",
+      "start": {
+        "x": 2.0,
+        "z": 2.0
+      },
+      "end": {
+        "x": 2.0,
+        "z": 98.0
+      },
+      "height": 2.5,
+      "thickness": 0.5
+    },
+    {
+      "id": 3,
+      "side": "east",
+      "start": {
+        "x": 98.0,
+        "z": 2.0
+      },
+      "end": {
+        "x": 98.0,
+        "z": 98.0
+      },
+      "height": 2.5,
+      "thickness": 0.5
+    }
+  ],
+  "gates": [
+    {
+      "id": 0,
+      "wall_side": "east",
+      "position": {
+        "x": 98.0,
+        "z": 50.0
+      },
+      "width": 6.0,
+      "height": 2.5
+    }
+  ],
+  "roads": [
+    {
+      "id": 0,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 72.0,
+          "z": 50.0
+        },
+        {
+          "x": 71.58,
+          "z": 54.29
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 71.58,
+          "z": 54.29
+        },
+        {
+          "x": 70.33,
+          "z": 58.42
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 70.33,
+          "z": 58.42
+        },
+        {
+          "x": 68.29,
+          "z": 62.22
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 68.29,
+          "z": 62.22
+        },
+        {
+          "x": 65.56,
+          "z": 65.56
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 65.56,
+          "z": 65.56
+        },
+        {
+          "x": 62.22,
+          "z": 68.29
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 62.22,
+          "z": 68.29
+        },
+        {
+          "x": 58.42,
+          "z": 70.33
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 58.42,
+          "z": 70.33
+        },
+        {
+          "x": 54.29,
+          "z": 71.58
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 54.29,
+          "z": 71.58
+        },
+        {
+          "x": 50.0,
+          "z": 72.0
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 50.0,
+          "z": 72.0
+        },
+        {
+          "x": 45.71,
+          "z": 71.58
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 45.71,
+          "z": 71.58
+        },
+        {
+          "x": 41.58,
+          "z": 70.33
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 41.58,
+          "z": 70.33
+        },
+        {
+          "x": 37.78,
+          "z": 68.29
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 37.78,
+          "z": 68.29
+        },
+        {
+          "x": 34.44,
+          "z": 65.56
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 34.44,
+          "z": 65.56
+        },
+        {
+          "x": 31.71,
+          "z": 62.22
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 31.71,
+          "z": 62.22
+        },
+        {
+          "x": 29.67,
+          "z": 58.42
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 29.67,
+          "z": 58.42
+        },
+        {
+          "x": 28.42,
+          "z": 54.29
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 28.42,
+          "z": 54.29
+        },
+        {
+          "x": 28.0,
+          "z": 50.0
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 28.0,
+          "z": 50.0
+        },
+        {
+          "x": 28.42,
+          "z": 45.71
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 28.42,
+          "z": 45.71
+        },
+        {
+          "x": 29.67,
+          "z": 41.58
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 29.67,
+          "z": 41.58
+        },
+        {
+          "x": 31.71,
+          "z": 37.78
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 31.71,
+          "z": 37.78
+        },
+        {
+          "x": 34.44,
+          "z": 34.44
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 34.44,
+          "z": 34.44
+        },
+        {
+          "x": 37.78,
+          "z": 31.71
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 37.78,
+          "z": 31.71
+        },
+        {
+          "x": 41.58,
+          "z": 29.67
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 41.58,
+          "z": 29.67
+        },
+        {
+          "x": 45.71,
+          "z": 28.42
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 45.71,
+          "z": 28.42
+        },
+        {
+          "x": 50.0,
+          "z": 28.0
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 50.0,
+          "z": 28.0
+        },
+        {
+          "x": 54.29,
+          "z": 28.42
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 54.29,
+          "z": 28.42
+        },
+        {
+          "x": 58.42,
+          "z": 29.67
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 58.42,
+          "z": 29.67
+        },
+        {
+          "x": 62.22,
+          "z": 31.71
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 62.22,
+          "z": 31.71
+        },
+        {
+          "x": 65.56,
+          "z": 34.44
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 65.56,
+          "z": 34.44
+        },
+        {
+          "x": 68.29,
+          "z": 37.78
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 68.29,
+          "z": 37.78
+        },
+        {
+          "x": 70.33,
+          "z": 41.58
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 70.33,
+          "z": 41.58
+        },
+        {
+          "x": 71.58,
+          "z": 45.71
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "type": "main",
+      "width": 4.0,
+      "points": [
+        {
+          "x": 71.58,
+          "z": 45.71
+        },
+        {
+          "x": 72.0,
+          "z": 50.0
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "type": "access",
+      "width": 2.0,
+      "points": [
+        {
+          "x": 83.38,
+          "z": 51.1
+        },
+        {
+          "x": 72.0,
+          "z": 50.0
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "type": "access",
+      "width": 2.0,
+      "points": [
+        {
+          "x": 16.32,
+          "z": 48.67
+        },
+        {
+          "x": 28.0,
+          "z": 50.0
+        }
+      ]
+    }
+  ],
+  "ground": {
+    "type": "flat",
+    "material_hint": "dirt"
+  },
+  "metadata": {
+    "building_count": 6,
+    "coverage_ratio": 0.144,
+    "role_distribution": {
+      "primary": 1,
+      "tertiary": 2,
+      "ambient": 2,
+      "secondary": 1
+    }
+  }
+}
