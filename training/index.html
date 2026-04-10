@@ -911,20 +911,41 @@ function updateMouseVec(event) {
 }
 
 function findBuildingAtPoint(groundPt) {
-  // Find the building whose footprint contains the ground point.
-  // Uses placement data (position + width/depth diagonal radius).
+  // Check if the click point is inside a building's rotated rectangle.
+  // Transform the click into each building's local frame, then test
+  // against [-w/2, w/2] x [-d/2, d/2].  Tie-break by distance to center.
   if (!currentScene || !currentScene.building_infos) return -1;
   const binfos = currentScene.building_infos;
   let best = -1, bestD = Infinity;
+
   for (let i = 0; i < binfos.length; i++) {
     const b = binfos[i];
     const dx = groundPt.x - (b.x || 0);
     const dz = groundPt.z - (b.z || 0);
-    const dist = Math.sqrt(dx * dx + dz * dz);
-    const radius = Math.sqrt((b.width || 8) ** 2 + (b.depth || 8) ** 2) / 2;
-    if (dist < radius && dist < bestD) {
-      bestD = dist;
-      best = i;
+
+    // Inverse-rotate into building local frame
+    const ang = -(b.yaw_deg || 0) * Math.PI / 180;
+    const lx = dx * Math.cos(ang) - dz * Math.sin(ang);
+    const lz = dx * Math.sin(ang) + dz * Math.cos(ang);
+
+    const hw = (b.width || 8) / 2;
+    const hd = (b.depth || 8) / 2;
+
+    if (Math.abs(lx) <= hw && Math.abs(lz) <= hd) {
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < bestD) { bestD = dist; best = i; }
+    }
+  }
+
+  // Fallback: nearest building within 2m tolerance
+  if (best < 0) {
+    for (let i = 0; i < binfos.length; i++) {
+      const b = binfos[i];
+      const dx = groundPt.x - (b.x || 0);
+      const dz = groundPt.z - (b.z || 0);
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      const maxR = Math.max(b.width || 8, b.depth || 8) / 2 + 2;
+      if (dist < maxR && dist < bestD) { bestD = dist; best = i; }
     }
   }
   return best;
