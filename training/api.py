@@ -549,16 +549,22 @@ async def edit_scene(req: EditRequest):
         apply_edit_to_placement,
     )
 
-    # 1. Parse the instruction
-    edit = parse_edit_intent(req.instruction)
-    # Avoid printing the raw instruction — it may contain non-ASCII chars
-    # that the Windows console (cp1252) cannot encode.
+    # 1. Parse the instruction (LLM first, keyword fallback)
+    edit = parse_edit_intent(req.instruction, req.current_scene)
     try:
-        print(f"[EDIT] intent={edit.get('intent')}  "
+        print(f"[EDIT] intent={edit.get('intent')}  source={edit.get('source')}  "
               f"target={edit.get('target')}  direction={edit.get('direction')}  "
-              f"new_style={edit.get('new_style')}")
+              f"amount={edit.get('amount')}  new_style={edit.get('new_style')}")
     except Exception:
         pass
+
+    # 1b. Regenerate intent → delegate to /generate
+    if edit.get("intent") == "regenerate":
+        gen_req = GenerateRequest(prompt=req.instruction)
+        result = await generate(gen_req)
+        if isinstance(result, dict):
+            result["edit_summary"] = edit.get("summary", "已重新生成场景")
+        return result
 
     # 2. Recover base zone params from the previous /generate response
     cs = req.current_scene or {}
@@ -600,7 +606,7 @@ async def edit_scene(req: EditRequest):
     # 6. Post-process the placement JSON for height/entrance edits.
     #    The mesh won't reflect these exactly, but the JSON download will,
     #    which is what the UE5 assembler reads.
-    if edit.get("intent") in ("modify_height", "modify_entrance"):
+    if edit.get("intent") in ("modify_height", "modify_entrance", "modify_size"):
         json_url = result.get("json_url", "")
         json_name = json_url.rsplit("/", 1)[-1]
         json_path = OUTPUT_DIR / json_name
